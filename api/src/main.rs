@@ -1,4 +1,6 @@
+mod app_state;
 mod handlers;
+mod middlewares;
 mod router;
 
 use axum::{Router, http::Method};
@@ -10,7 +12,7 @@ use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::router::v1::v1_router;
+use crate::{app_state::AppState, router::v1::v1_router};
 
 #[tokio::main]
 async fn main() {
@@ -45,11 +47,17 @@ async fn main() {
         .await
         .expect("Cannot connect to database");
 
+    let app_state = AppState {
+        pool: pool,
+        admin_api_token: config.admin_api_token,
+    };
+
     // Initialize router
     let app = Router::new()
-        .nest("/api/v1", v1_router())
+        .nest("/api/v1", v1_router(app_state.clone()))
         .layer(ServiceBuilder::new().layer(cors_layer))
-        .with_state(pool);
+        .with_state(app_state);
+
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await
         .unwrap();

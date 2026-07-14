@@ -1,8 +1,7 @@
 use axum::{Router, routing::get};
-use sqlx::PgPool;
 
-use crate::handlers::health::health_check;
+use crate::{app_state::AppState, handlers::health::health_check};
 
-pub fn health_router() -> Router<PgPool> {
+pub fn health_router() -> Router<AppState> {
     Router::new().route("/", get(health_check))
 }

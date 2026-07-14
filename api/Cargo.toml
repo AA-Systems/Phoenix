@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 common = { path = '../common' }
+db = { path = '../db' }
+types = { path = '../types' }
 dotenv = "0.15.0"
 axum = "0.8.9"
 tokio = { version = "1.52.3", features = ["rt-multi-thread"] }
@@ -12,4 +14,6 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sqlx = { version = "0.9", features = ["runtime-tokio", "any", "postgres", "tls-rustls"] }
 tower = "0.5.3"
-tower-http = {version = "0.6.11", features = ["cors"]}
+tower-http = { version = "0.6.11", features = ["cors"] }
+serde = { version = "1.0.228", features = ["derive"] }
+validator = { version = "0.20.0", features = ["derive"] }

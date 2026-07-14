@@ -4,6 +4,8 @@ WORKDIR /cex
 COPY Cargo.toml Cargo.lock ./
 COPY common ./common
 COPY api ./api
+COPY db ./db
+COPY types ./types
 RUN cargo build --release -p api
 
 # --- run ---

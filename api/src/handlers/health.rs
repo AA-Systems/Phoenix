@@ -1,6 +1,7 @@
 use axum::extract::State;
-use sqlx::PgPool;
 
-pub async fn health_check(State(_pool): State<PgPool>) -> String {
+use crate::app_state::AppState;
+
+pub async fn health_check(State(_app_state): State<AppState>) -> String {
     String::from("Server is healthy")
 }
