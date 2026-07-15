@@ -1,9 +1,5 @@
-mod app_state;
-mod handlers;
-mod middlewares;
-mod router;
-
-use axum::{Router, http::Method};
+use api::{app_state::AppState, build_app};
+use axum::http::Method;
 use common::config::Config;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
@@ -11,8 +7,6 @@ use std::time::Duration;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-use crate::{app_state::AppState, router::v1::v1_router};
 
 #[tokio::main]
 async fn main() {
@@ -53,10 +47,7 @@ async fn main() {
     };
 
     // Initialize router
-    let app = Router::new()
-        .nest("/api/v1", v1_router(app_state.clone()))
-        .layer(ServiceBuilder::new().layer(cors_layer))
-        .with_state(app_state);
+    let app = build_app(app_state).layer(ServiceBuilder::new().layer(cors_layer));
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
         .await

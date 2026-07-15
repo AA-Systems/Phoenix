@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_cex_test
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: supersecretpassword
+      POSTGRES_DB: cex_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d cex_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
