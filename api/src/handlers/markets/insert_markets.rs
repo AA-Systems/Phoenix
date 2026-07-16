@@ -21,7 +21,7 @@ pub struct InsertMarketRequest {
 pub async fn insert_market(
     State(app_state): State<AppState>,
     body: Json<InsertMarketRequest>,
-) -> Result<(StatusCode, Json<Market>), (StatusCode, String)> {
+) -> Result<Json<Market>, (StatusCode, String)> {
     body.validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
 
@@ -35,7 +35,7 @@ pub async fn insert_market(
     .await;
 
     match db_response {
-        Ok(market) => Ok((StatusCode::CREATED, Json(market))),
+        Ok(market) => Ok(Json(market)),
         Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
     }
 }

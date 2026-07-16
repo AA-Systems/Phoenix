@@ -19,7 +19,7 @@ pub struct InsertAssetRequest {
 pub async fn insert_asset(
     State(app_state): State<AppState>,
     Json(body): Json<InsertAssetRequest>,
-) -> Result<(StatusCode, Json<Asset>), (StatusCode, String)> {
+) -> Result<Json<Asset>, (StatusCode, String)> {
     body.validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
 
@@ -32,7 +32,7 @@ pub async fn insert_asset(
     .await;
 
     match db_response {
-        Ok(asset) => Ok((StatusCode::CREATED, Json(asset))),
+        Ok(asset) => Ok(Json(asset)),
         Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
     }
 }

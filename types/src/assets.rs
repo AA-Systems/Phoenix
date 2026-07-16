@@ -9,7 +9,7 @@ pub enum AssetStatus {
     Archived,
 }
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Asset {
     pub id: uuid::Uuid,
     pub symbol: String,
