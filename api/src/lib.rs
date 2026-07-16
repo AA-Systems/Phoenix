@@ -2,6 +2,7 @@ pub mod app_state;
 pub mod handlers;
 pub mod middlewares;
 pub mod router;
+pub mod services;
 
 use crate::app_state::AppState;
 use crate::router::v1::v1_router;

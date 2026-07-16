@@ -8,3 +8,5 @@ chrono = { version = "0.4.45", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 sqlx = { version = "0.9", features = ["postgres", "chrono", "uuid"] }
 uuid = { version = "1.23.5", features = ["serde"] }
+validator = { version = "0.20.0", features = ["derive"] }
+axum = "0.8.9"

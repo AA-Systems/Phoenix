@@ -1,7 +1,7 @@
 use api::build_app;
 use axum::{body::to_bytes, http::StatusCode};
 use tower::ServiceExt;
-use types::markets::Market;
+use types::markets::insert_market_response::InsertMarketBody;
 
 use crate::common::{insert_asset_req, insert_market_req, test_state};
 
@@ -28,13 +28,14 @@ async fn test_insert_market_then_duplicate() {
 
     let request = insert_market_req("SOL/USDC", "Solana USDC market", "SOL", "USDC", true);
     let response = app.clone().oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::CREATED);
 
     let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let market: Market = serde_json::from_slice(&bytes).expect("response should be Market JSON");
+    let body: InsertMarketBody =
+        serde_json::from_slice(&bytes).expect("response should contain market JSON");
 
-    assert_eq!(market.symbol, "SOL/USDC");
-    assert_eq!(market.name, "Solana USDC market");
+    assert_eq!(body.market.symbol, "SOL/USDC");
+    assert_eq!(body.market.name, "Solana USDC market");
 
     let request = insert_market_req("SOL/USDC", "Solana USDC market", "SOL", "USDC", true);
     let response = app.oneshot(request).await.unwrap();

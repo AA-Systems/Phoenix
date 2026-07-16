@@ -1,25 +1,16 @@
 use axum::{Json, extract::State, http::StatusCode};
 use db::assets::insert::insert;
-use serde::Deserialize;
-use types::assets::Asset;
+use types::assets::{
+    insert_asset_request::InsertAssetRequest, insert_asset_response::InsertAssetResponse,
+};
 use validator::Validate;
 
 use crate::app_state::AppState;
 
-#[derive(Deserialize, Validate)]
-pub struct InsertAssetRequest {
-    #[validate(length(min = 1, max = 16))]
-    pub symbol: String,
-    #[validate(length(min = 1, max = 64))]
-    pub name: String,
-    #[validate(range(max = 18))]
-    pub decimals: u32,
-}
-
 pub async fn insert_asset(
     State(app_state): State<AppState>,
     Json(body): Json<InsertAssetRequest>,
-) -> Result<Json<Asset>, (StatusCode, String)> {
+) -> Result<InsertAssetResponse, (StatusCode, String)> {
     body.validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
 
@@ -32,7 +23,7 @@ pub async fn insert_asset(
     .await;
 
     match db_response {
-        Ok(asset) => Ok(Json(asset)),
+        Ok(asset) => Ok(InsertAssetResponse::created(asset)),
         Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
     }
 }

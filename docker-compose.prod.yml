@@ -6,6 +6,11 @@ services:
     container_name: api_cex
     env_file:
       - .env
+    volumes:
+      - /etc/centralized-exchange/secrets:/run/secrets/jwt:ro
+    environment:
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt/jwt-public.pem
     ports:
       - "3000:3000"
     restart: unless-stopped

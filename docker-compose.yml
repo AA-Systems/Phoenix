@@ -29,6 +29,11 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    environment:
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt/jwt-public.pem
+    volumes:
+      - ./secrets:/run/secrets/jwt:ro
 
 volumes:
   db_storage:

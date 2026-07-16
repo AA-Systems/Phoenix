@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
+pub mod insert_market_request;
+pub mod insert_market_response;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "market_status", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]

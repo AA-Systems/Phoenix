@@ -1,14 +1,20 @@
 pub mod assets;
 pub mod markets;
+pub mod users;
+
+use std::{fs, path::Path};
 
 pub use assets::insert_asset_req::insert_asset_req;
 pub use markets::insert_market_req::insert_market_req;
 
-use api::app_state::AppState;
+use api::{app_state::AppState, services::token_service::TokenService};
 use sqlx::postgres::PgPoolOptions;
 
 pub const ADMIN_TOKEN: &str = "test-token";
 pub const TEST_DATABASE_URL: &str = "postgres://admin:supersecretpassword@localhost:5433/cex_test";
+pub const TEST_JWT_ISSUER: &str = "centralized-exchange-test";
+pub const TEST_JWT_AUDIENCE: &str = "exchange-api-test";
+pub const TEST_ACCESS_TOKEN_TTL_SECONDS: u64 = 900;
 
 pub async fn test_state() -> AppState {
     let pool = PgPoolOptions::new()
@@ -20,9 +26,23 @@ pub async fn test_state() -> AppState {
         .execute(&pool)
         .await
         .unwrap();
+    let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let private_key_pem = fs::read(repository_root.join("secrets/jwt-private.pem"))
+        .expect("cannot read test JWT private key");
+    let public_key_pem = fs::read(repository_root.join("secrets/jwt-public.pem"))
+        .expect("cannot read test JWT public key");
+    let token_service = TokenService::new(
+        &private_key_pem,
+        &public_key_pem,
+        TEST_JWT_ISSUER.to_string(),
+        TEST_JWT_AUDIENCE.to_string(),
+        TEST_ACCESS_TOKEN_TTL_SECONDS,
+    )
+    .expect("cannot initialize token service");
 
     AppState {
         pool,
         admin_api_token: ADMIN_TOKEN.into(),
+        token_service,
     }
 }

@@ -1,27 +1,16 @@
 use axum::{Json, extract::State, http::StatusCode};
 use db::markets::insert::insert;
-use serde::Deserialize;
-use types::markets::Market;
+use types::markets::{
+    insert_market_request::InsertMarketRequest, insert_market_response::InsertMarketResponse,
+};
 use validator::Validate;
 
 use crate::app_state::AppState;
 
-#[derive(Deserialize, Validate)]
-pub struct InsertMarketRequest {
-    #[validate(length(min = 1, max = 32))]
-    symbol: String,
-    #[validate(length(min = 1, max = 64))]
-    name: String,
-    #[validate(length(min = 1, max = 16))]
-    base_asset_symbol: String,
-    #[validate(length(min = 1, max = 16))]
-    quote_asset_symbol: String,
-}
-
 pub async fn insert_market(
     State(app_state): State<AppState>,
     body: Json<InsertMarketRequest>,
-) -> Result<Json<Market>, (StatusCode, String)> {
+) -> Result<InsertMarketResponse, (StatusCode, String)> {
     body.validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
 
@@ -35,7 +24,7 @@ pub async fn insert_market(
     .await;
 
     match db_response {
-        Ok(market) => Ok(Json(market)),
+        Ok(market) => Ok(InsertMarketResponse::created(market)),
         Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
     }
 }

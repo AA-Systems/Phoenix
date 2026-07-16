@@ -1,9 +1,9 @@
-use api::{app_state::AppState, build_app};
+use api::{app_state::AppState, build_app, services::token_service::TokenService};
 use axum::http::Method;
 use common::config::Config;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
-use std::time::Duration;
+use std::{fs, time::Duration};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -41,9 +41,21 @@ async fn main() {
         .await
         .expect("Cannot connect to database");
 
+    let private_key_pem =
+        fs::read(&config.jwt_private_key_path).expect("cannot read JWT private key");
+    let public_key_pem = fs::read(&config.jwt_public_key_path).expect("cannot read JWT public key");
+    let token_service = TokenService::new(
+        &private_key_pem,
+        &public_key_pem,
+        config.jwt_issuer,
+        config.jwt_audience,
+        config.access_token_ttl_seconds as u64,
+    )
+    .expect("cannot initialize token service");
     let app_state = AppState {
         pool: pool,
         admin_api_token: config.admin_api_token,
+        token_service,
     };
 
     // Initialize router

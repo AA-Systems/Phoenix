@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 types = { path = "../types" }
 sqlx = { version = "0.9", features = ["runtime-tokio", "postgres", "tls-rustls", "chrono", "uuid"] }
+chrono = "0.4.45"
+uuid = "1.23.5"

@@ -1,7 +1,7 @@
 use api::build_app;
 use axum::{body::to_bytes, http::StatusCode};
 use tower::ServiceExt;
-use types::assets::Asset;
+use types::assets::insert_asset_response::InsertAssetBody;
 
 use crate::common::{insert_asset_req, test_state};
 
@@ -21,14 +21,17 @@ async fn test_insert_asset_then_duplicate() {
 
     let request = insert_asset_req("/api/v1/assets/admin/insert", "USD", "USD Coin", 6, true);
     let response = app.clone().oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
-    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let asset: Asset = serde_json::from_slice(&bytes).expect("response should be Asset JSON");
+    let status = response.status();
 
-    assert_eq!(asset.symbol, "USD");
-    assert_eq!(asset.name, "USD Coin");
-    assert_eq!(asset.decimals, 6);
-    assert_eq!(asset.status, types::assets::AssetStatus::Active);
+    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let body: InsertAssetBody =
+        serde_json::from_slice(&bytes).expect("response should contain asset JSON");
+
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(body.asset.symbol, "USD");
+    assert_eq!(body.asset.name, "USD Coin");
+    assert_eq!(body.asset.decimals, 6);
+    assert_eq!(body.asset.status, types::assets::AssetStatus::Active);
 
     let request = insert_asset_req("/api/v1/assets/admin/insert", "USD", "USD Coin", 6, true);
     let response = app.oneshot(request).await.unwrap();
