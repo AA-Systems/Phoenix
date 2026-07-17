@@ -24,6 +24,18 @@ pub async fn insert_asset(
 
     match db_response {
         Ok(asset) => Ok(InsertAssetResponse::created(asset)),
-        Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
+        Err(error) => Err(match error {
+            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                (StatusCode::BAD_REQUEST, "Asset already exists".to_string())
+            }
+            sqlx::Error::RowNotFound => (
+                StatusCode::BAD_REQUEST,
+                "Unable to create asset".to_string(),
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            ),
+        }),
     }
 }

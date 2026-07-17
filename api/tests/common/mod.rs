@@ -7,7 +7,10 @@ use std::{fs, path::Path};
 pub use assets::insert_asset_req::insert_asset_req;
 pub use markets::insert_market_req::insert_market_req;
 
-use api::{app_state::AppState, services::token_service::TokenService};
+use api::{
+    app_state::AppState,
+    services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
+};
 use sqlx::postgres::PgPoolOptions;
 
 pub const ADMIN_TOKEN: &str = "test-token";
@@ -26,6 +29,7 @@ pub async fn test_state() -> AppState {
         .execute(&pool)
         .await
         .unwrap();
+
     let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
     let private_key_pem = fs::read(repository_root.join("secrets/jwt-private.pem"))
         .expect("cannot read test JWT private key");
@@ -40,9 +44,15 @@ pub async fn test_state() -> AppState {
     )
     .expect("cannot initialize token service");
 
+    let refresh_token_config = RefreshTokenConfig {
+        refresh_token_ttl_seconds: 2592000,
+        cookie_secure: false,
+    };
+
     AppState {
         pool,
         admin_api_token: ADMIN_TOKEN.into(),
         token_service,
+        refresh_token_config,
     }
 }

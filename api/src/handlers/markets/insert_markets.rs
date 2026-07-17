@@ -25,6 +25,18 @@ pub async fn insert_market(
 
     match db_response {
         Ok(market) => Ok(InsertMarketResponse::created(market)),
-        Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
+        Err(error) => Err(match error {
+            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                (StatusCode::BAD_REQUEST, "Market already exists".to_string())
+            }
+            sqlx::Error::RowNotFound => (
+                StatusCode::BAD_REQUEST,
+                "Unable to create market".to_string(),
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            ),
+        }),
     }
 }

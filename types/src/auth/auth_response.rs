@@ -1,4 +1,5 @@
 use axum::{Json, http::StatusCode, response::IntoResponse};
+use axum_extra::extract::CookieJar;
 use serde::{Deserialize, Serialize};
 
 use crate::auth::User;
@@ -7,26 +8,30 @@ use crate::auth::User;
 pub struct AuthResponse {
     #[serde(skip)]
     pub status_code: StatusCode,
+    #[serde(skip)]
+    pub jar: CookieJar,
     pub user: User,
     pub access_token: String,
     pub expires_in: u32,
 }
 
 impl AuthResponse {
-    pub fn created(user: User, access_token: String, expires_in: u32) -> Self {
+    pub fn created(jar: CookieJar, user: User, access_token: String, expires_in: u32) -> Self {
         Self {
             status_code: StatusCode::CREATED,
+            jar,
             user,
             access_token,
-            expires_in: expires_in,
+            expires_in,
         }
     }
-    pub fn ok(user: User, access_token: String, expires_in: u32) -> Self {
+    pub fn ok(jar: CookieJar, user: User, access_token: String, expires_in: u32) -> Self {
         Self {
             status_code: StatusCode::OK,
+            jar,
             user,
             access_token,
-            expires_in: expires_in,
+            expires_in,
         }
     }
 }
@@ -34,7 +39,8 @@ impl AuthResponse {
 impl IntoResponse for AuthResponse {
     fn into_response(self) -> axum::response::Response {
         let status = self.status_code;
-        (status, Json(self)).into_response()
+        let jar = self.jar.clone();
+        (status, jar, Json(self)).into_response()
     }
 }
 

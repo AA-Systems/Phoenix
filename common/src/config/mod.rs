@@ -9,7 +9,9 @@ pub struct Config {
     pub jwt_public_key_path: String,
     pub jwt_issuer: String,
     pub jwt_audience: String,
-    pub access_token_ttl_seconds: u32,
+    pub access_token_ttl_seconds: u64,
+    pub refresh_token_ttl_seconds: u64,
+    pub cookie_secure: bool,
 }
 
 impl Config {
@@ -27,8 +29,16 @@ impl Config {
             jwt_audience: env::var("JWT_AUDIENCE").expect("jwt_audience must be set"),
             access_token_ttl_seconds: env::var("ACCESS_TOKEN_TTL_SECONDS")
                 .expect("access_token_ttl_seconds must be set")
-                .parse::<u32>()
+                .parse::<u64>()
                 .expect("access_token_ttl_seconds must be a number"),
+            refresh_token_ttl_seconds: env::var("REFRESH_TOKEN_TTL_SECONDS")
+                .expect("refresh_token_ttl_seconds must be set")
+                .parse::<u64>()
+                .expect("refresh_token_ttl_seconds must be a number"),
+            cookie_secure: env::var("COOKIE_SECURE")
+                .expect("cookie_secure must be set")
+                .parse::<bool>()
+                .expect("cookie_secure must be a bool"),
         }
     }
 }

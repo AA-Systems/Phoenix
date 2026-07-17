@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use axum::{Json, extract::State, http::StatusCode};
+use axum_extra::extract::CookieJar;
 use db::{sessions::insert::insert, users::login::find_by_email};
 use sqlx::types::chrono::Utc;
 use types::auth::{auth_response::AuthResponse, login_user_request::LoginUserRequest};
@@ -11,6 +12,7 @@ use crate::{app_state::AppState, services::refresh_token_service::RefreshTokenSe
 
 pub async fn login_user(
     State(app_state): State<AppState>,
+    jar: CookieJar,
     Json(mut body): Json<LoginUserRequest>,
 ) -> Result<AuthResponse, (StatusCode, String)> {
     body.email = body.email.trim().to_lowercase();
@@ -19,11 +21,15 @@ pub async fn login_user(
 
     let credentials = find_by_email(&app_state.pool, &body.email)
         .await
-        .map_err(|_| {
-            (
+        .map_err(|error| match error {
+            sqlx::Error::RowNotFound => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password".to_string(),
-            )
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            ),
         })?;
 
     let stored_password_hash = credentials.password_hash.clone();
@@ -51,7 +57,8 @@ pub async fn login_user(
     let user = credentials.into_user();
 
     let refresh_token = RefreshTokenService::generate();
-    let session_expires_at = Utc::now() + Duration::from_hours(720);
+    let session_expires_at =
+        Utc::now() + Duration::from_secs(app_state.refresh_token_config.refresh_token_ttl_seconds);
 
     let session = insert(
         &app_state.pool,
@@ -62,7 +69,12 @@ pub async fn login_user(
         None,
     )
     .await
-    .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+    .map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Internal server error".to_string(),
+        )
+    })?;
 
     let access_token = app_state
         .token_service
@@ -74,7 +86,15 @@ pub async fn login_user(
             )
         })?;
 
+    let refresh_cookie = RefreshTokenService::build_refresh_token(
+        refresh_token.raw_token,
+        app_state.refresh_token_config.refresh_token_ttl_seconds,
+        app_state.refresh_token_config.cookie_secure,
+    );
+    let jar = jar.add(refresh_cookie);
+
     Ok(AuthResponse::ok(
+        jar,
         user,
         access_token,
         app_state.token_service.access_token_ttl_seconds() as u32,

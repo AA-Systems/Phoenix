@@ -4,6 +4,7 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHasher, SaltString},
 };
+use axum_extra::extract::CookieJar;
 use rand_core::OsRng;
 
 use axum::{Json, extract::State, http::StatusCode};
@@ -16,6 +17,7 @@ use crate::{app_state::AppState, services::refresh_token_service::RefreshTokenSe
 
 pub async fn register_user(
     State(app_state): State<AppState>,
+    jar: CookieJar,
     Json(mut body): Json<RegisterUserRequest>,
 ) -> Result<AuthResponse, (StatusCode, String)> {
     body.name = body.name.trim().to_string();
@@ -46,7 +48,8 @@ pub async fn register_user(
     })?;
 
     let refresh_token = RefreshTokenService::generate();
-    let session_expires_at = Utc::now() + Duration::from_hours(720);
+    let session_expires_at =
+        Utc::now() + Duration::from_secs(app_state.refresh_token_config.refresh_token_ttl_seconds);
 
     let registration = RegistrationWithSession {
         name: &body.name,
@@ -60,7 +63,19 @@ pub async fn register_user(
 
     let (user, session) = register_with_session(&app_state.pool, registration)
         .await
-        .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+        .map_err(|error| match error {
+            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+                (StatusCode::BAD_REQUEST, "Email already registered".to_string())
+            }
+            sqlx::Error::RowNotFound => (
+                StatusCode::BAD_REQUEST,
+                "Unable to complete registration".to_string(),
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            ),
+        })?;
 
     let access_token = app_state
         .token_service
@@ -72,7 +87,15 @@ pub async fn register_user(
             )
         })?;
 
+    let refresh_cookie = RefreshTokenService::build_refresh_token(
+        refresh_token.raw_token,
+        app_state.refresh_token_config.refresh_token_ttl_seconds,
+        app_state.refresh_token_config.cookie_secure,
+    );
+    let jar = jar.add(refresh_cookie);
+
     Ok(AuthResponse::created(
+        jar,
         user,
         access_token,
         app_state.token_service.access_token_ttl_seconds() as u32,

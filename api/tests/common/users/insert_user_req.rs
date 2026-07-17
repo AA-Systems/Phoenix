@@ -35,6 +35,15 @@ pub fn login_user_req(email: &str, password: &str) -> Request<Body> {
         .unwrap()
 }
 
+pub fn refresh_token_req(refresh_cookie: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/api/v1/auth/refresh")
+        .header(header::COOKIE, refresh_cookie)
+        .body(Body::empty())
+        .unwrap()
+}
+
 pub fn unique_email() -> String {
     format!("user-{}@example.com", uuid::Uuid::new_v4())
 }

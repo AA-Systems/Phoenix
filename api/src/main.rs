@@ -1,4 +1,8 @@
-use api::{app_state::AppState, build_app, services::token_service::TokenService};
+use api::{
+    app_state::AppState,
+    build_app,
+    services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
+};
 use axum::http::Method;
 use common::config::Config;
 use dotenv::dotenv;
@@ -52,10 +56,17 @@ async fn main() {
         config.access_token_ttl_seconds as u64,
     )
     .expect("cannot initialize token service");
+
+    let refresh_token_config = RefreshTokenConfig {
+        refresh_token_ttl_seconds: config.refresh_token_ttl_seconds,
+        cookie_secure: config.cookie_secure,
+    };
+
     let app_state = AppState {
         pool: pool,
         admin_api_token: config.admin_api_token,
         token_service,
+        refresh_token_config,
     };
 
     // Initialize router
