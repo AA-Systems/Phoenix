@@ -78,6 +78,18 @@ body {
   }
 }
 
+@keyframes footer-glow {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: translate3d(-50%, 8px, 0) scale(0.96);
+  }
+  50% {
+    opacity: 0.78;
+    transform: translate3d(-50%, -4px, 0) scale(1.04);
+  }
+}
+
 .phoenix-flame {
   animation: phoenix-flame 2.8s ease-in-out infinite;
   transform-origin: 50% 80%;
@@ -103,13 +115,18 @@ body {
   animation: page-reveal 700ms ease-out both;
 }
 
+.phoenix-footer-glow {
+  animation: footer-glow 7s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .phoenix-flame,
   .phoenix-ring,
   .phoenix-ring-reverse,
   .phoenix-ember,
   .phoenix-terminal,
-  .page-reveal {
+  .page-reveal,
+  .phoenix-footer-glow {
     animation: none;
   }
 }

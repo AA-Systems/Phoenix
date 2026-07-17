@@ -10,6 +10,7 @@ import Link from "next/link";
 
 import { MarketBoard } from "@/components/market-board";
 import { PhoenixCore } from "@/components/phoenix-core";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 
@@ -215,11 +216,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="mx-auto flex w-full max-w-[1380px] flex-col gap-3 px-5 py-8 text-xs text-[#706776] sm:flex-row sm:justify-between lg:px-8">
-        <span>© 2026 PHEONIX</span>
-        <span>Built for spot markets · devnet-ready</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
-s;
