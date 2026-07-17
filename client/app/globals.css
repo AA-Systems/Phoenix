@@ -1,1 +1,115 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #0d0a10;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+}
+
+::selection {
+  background: #ff6f61;
+  color: #160e12;
+}
+
+@keyframes phoenix-flame {
+  0%,
+  100% {
+    opacity: 0.88;
+    transform: translateY(2px) rotate(-2deg) scale(0.96);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-5px) rotate(2deg) scale(1.04);
+  }
+  70% {
+    transform: translateY(-2px) rotate(-1deg) scale(1);
+  }
+}
+
+@keyframes phoenix-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes phoenix-ember {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.7);
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(18px, -110px, 0) scale(0.15);
+  }
+}
+
+@keyframes terminal-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes page-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.phoenix-flame {
+  animation: phoenix-flame 2.8s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+
+.phoenix-ring {
+  animation: phoenix-ring 28s linear infinite;
+}
+
+.phoenix-ring-reverse {
+  animation: phoenix-ring 20s linear infinite reverse;
+}
+
+.phoenix-ember {
+  animation: phoenix-ember 5s ease-out infinite;
+}
+
+.phoenix-terminal {
+  animation: terminal-float 6s ease-in-out infinite;
+}
+
+.page-reveal {
+  animation: page-reveal 700ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phoenix-flame,
+  .phoenix-ring,
+  .phoenix-ring-reverse,
+  .phoenix-ember,
+  .phoenix-terminal,
+  .page-reveal {
+    animation: none;
+  }
+}

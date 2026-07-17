@@ -2,7 +2,7 @@ use api::build_app;
 use axum::{body::to_bytes, http::StatusCode};
 use tower::ServiceExt;
 use types::auth::auth_response::AuthBody;
-use types::balances::Balance;
+use types::balances::AssetBalance;
 
 use crate::common::{
     test_state,
@@ -37,7 +37,7 @@ async fn get_balances_returns_empty_list_for_new_user() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let balances: Vec<Balance> =
+    let balances: Vec<AssetBalance> =
         serde_json::from_slice(&bytes).expect("balances should return JSON array");
     assert!(balances.is_empty());
 }

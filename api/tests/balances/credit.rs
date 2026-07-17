@@ -2,7 +2,7 @@ use api::build_app;
 use axum::{body::to_bytes, http::StatusCode};
 use tower::ServiceExt;
 use types::auth::auth_response::AuthBody;
-use types::balances::Balance;
+use types::balances::AssetBalance;
 use types::balances::credit_balance_response::CreditBalanceBody;
 use types::ledger_entries::LedgerEntryType;
 
@@ -59,7 +59,7 @@ async fn credit_balance_then_list_balances() {
     assert_eq!(response.status(), StatusCode::OK);
 
     let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let balances: Vec<Balance> =
+    let balances: Vec<AssetBalance> =
         serde_json::from_slice(&bytes).expect("balances should return JSON array");
     assert_eq!(balances.len(), 1);
     assert_eq!(balances[0].available, 100_000_000);

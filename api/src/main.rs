@@ -3,7 +3,10 @@ use api::{
     build_app,
     services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
 };
-use axum::http::Method;
+use axum::http::{
+    Method,
+    header::{AUTHORIZATION, CONTENT_TYPE},
+};
 use axum_limit::Quota;
 use common::config::Config;
 use dotenv::dotenv;
@@ -34,6 +37,7 @@ async fn main() {
     let origins = [frontend_url.parse().unwrap()];
     let cors_layer = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE])
         .allow_credentials(true)
         .allow_origin(origins);
 

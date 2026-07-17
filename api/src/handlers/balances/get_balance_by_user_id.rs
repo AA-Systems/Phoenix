@@ -5,7 +5,7 @@ use axum::{
 };
 use axum_limit::DynamicFixedWindowLimit;
 use db::balances::list_by_user;
-use types::balances::Balance;
+use types::balances::AssetBalance;
 
 use crate::{
     app_state::{AppState, AuthQuota},
@@ -16,7 +16,7 @@ pub async fn get_balance_by_user_id(
     _: DynamicFixedWindowLimit<ClientIpUri, AuthQuota>,
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
-) -> Result<Json<Vec<Balance>>, (StatusCode, String)> {
+) -> Result<Json<Vec<AssetBalance>>, (StatusCode, String)> {
     let balances = list_by_user::get_by_user_id(&app_state.pool, auth_user.user_id)
         .await
         .map_err(|error| match error {
