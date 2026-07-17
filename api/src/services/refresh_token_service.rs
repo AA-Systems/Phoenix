@@ -55,4 +55,14 @@ impl RefreshTokenService {
             ))
             .build()
     }
+
+    pub fn clear_refresh_token(secure: bool) -> Cookie<'static> {
+        Cookie::build(("refresh_token", ""))
+            .http_only(true)
+            .secure(secure)
+            .same_site(SameSite::Lax)
+            .path("/api/v1/auth")
+            .max_age(Duration::seconds(0))
+            .build()
+    }
 }

@@ -8,7 +8,9 @@ use types::auth::auth_response::AuthBody;
 
 use crate::common::{
     test_state,
-    users::insert_user_req::{login_user_req, refresh_token_req, register_user_req, unique_email},
+    users::insert_user_req::{
+        login_user_req, logout_req, me_req, refresh_token_req, register_user_req, unique_email,
+    },
 };
 
 const VALID_PASSWORD: &str = "StrongPassword123!";
@@ -181,5 +183,83 @@ async fn refreshes_access_token_and_rejects_reuse_of_old_cookie() {
 
     let request = refresh_token_req(&refresh_cookie);
     let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn me_requires_valid_access_token() {
+    let app = build_app(test_state().await);
+    let email = unique_email();
+
+    let response = app.clone().oneshot(me_req(None)).await.unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    let request = register_user_req("Test User", &email, VALID_PASSWORD);
+    let response = app.clone().oneshot(request).await.unwrap();
+    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let registered: AuthBody =
+        serde_json::from_slice(&bytes).expect("registration should return auth JSON");
+
+    let response = app
+        .clone()
+        .oneshot(me_req(Some("not-a-jwt")))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+
+    let response = app
+        .oneshot(me_req(Some(&registered.access_token)))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let user: types::auth::User =
+        serde_json::from_slice(&bytes).expect("me should return user JSON");
+    assert_eq!(user.id, registered.user.id);
+    assert_eq!(user.email, email);
+}
+
+#[tokio::test]
+async fn logout_revokes_refresh_token_and_clears_cookie() {
+    let app = build_app(test_state().await);
+    let email = unique_email();
+
+    let request = register_user_req("Test User", &email, VALID_PASSWORD);
+    let response = app.clone().oneshot(request).await.unwrap();
+    let set_cookie = response
+        .headers()
+        .get(header::SET_COOKIE)
+        .expect("registration should set refresh cookie")
+        .to_str()
+        .expect("Set-Cookie should be valid text")
+        .to_owned();
+    let refresh_cookie = set_cookie
+        .split(';')
+        .next()
+        .expect("Set-Cookie should include refresh_token")
+        .to_owned();
+
+    let response = app
+        .clone()
+        .oneshot(logout_req(&refresh_cookie))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+    let clear_cookie = response
+        .headers()
+        .get(header::SET_COOKIE)
+        .expect("logout should clear refresh cookie")
+        .to_str()
+        .expect("Set-Cookie should be valid text")
+        .to_owned();
+    assert!(clear_cookie.contains("refresh_token="));
+    assert!(clear_cookie.contains("Max-Age=0"));
+
+    let response = app
+        .oneshot(refresh_token_req(&refresh_cookie))
+        .await
+        .unwrap();
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
