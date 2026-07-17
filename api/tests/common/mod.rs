@@ -1,10 +1,12 @@
 pub mod assets;
+pub mod balances;
 pub mod markets;
 pub mod users;
 
 use std::{fs, path::Path};
 
 pub use assets::insert_asset_req::insert_asset_req;
+pub use balances::credit_balance_req::credit_balance_req;
 pub use markets::insert_market_req::insert_market_req;
 
 use api::{

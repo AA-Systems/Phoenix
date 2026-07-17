@@ -14,8 +14,6 @@ pub struct TokenService {
     access_token_ttl_seconds: u64,
 }
 
-
-
 impl TokenService {
     pub fn new(
         private_key_pem: &[u8],

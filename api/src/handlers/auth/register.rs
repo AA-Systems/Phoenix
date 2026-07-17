@@ -7,11 +7,7 @@ use argon2::{
 use axum_extra::extract::CookieJar;
 use rand_core::OsRng;
 
-use axum::{
-    Json,
-    extract::State,
-    http::StatusCode,
-};
+use axum::{Json, extract::State, http::StatusCode};
 use axum_limit::DynamicFixedWindowLimit;
 use db::auth::register_with_session::{RegistrationWithSession, register_with_session};
 use sqlx::types::chrono::Utc;
@@ -74,9 +70,10 @@ pub async fn register_user(
     let (user, session) = register_with_session(&app_state.pool, registration)
         .await
         .map_err(|error| match error {
-            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
-                (StatusCode::BAD_REQUEST, "Email already registered".to_string())
-            }
+            sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => (
+                StatusCode::BAD_REQUEST,
+                "Email already registered".to_string(),
+            ),
             sqlx::Error::RowNotFound => (
                 StatusCode::BAD_REQUEST,
                 "Unable to complete registration".to_string(),

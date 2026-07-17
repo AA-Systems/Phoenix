@@ -1,11 +1,7 @@
 use std::time::Duration;
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::{
-    Json,
-    extract::State,
-    http::StatusCode,
-};
+use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::extract::CookieJar;
 use axum_limit::DynamicFixedWindowLimit;
 use db::{sessions::insert::insert, users::login::find_by_email};
