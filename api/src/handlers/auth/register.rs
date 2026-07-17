@@ -7,15 +7,25 @@ use argon2::{
 use axum_extra::extract::CookieJar;
 use rand_core::OsRng;
 
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::State,
+    http::StatusCode,
+};
+use axum_limit::DynamicFixedWindowLimit;
 use db::auth::register_with_session::{RegistrationWithSession, register_with_session};
 use sqlx::types::chrono::Utc;
 use types::auth::{auth_response::AuthResponse, register_user_request::RegisterUserRequest};
 use validator::Validate;
 
-use crate::{app_state::AppState, services::refresh_token_service::RefreshTokenService};
+use crate::{
+    app_state::{AppState, AuthQuota},
+    middlewares::rate_limit_key::ClientIpUri,
+    services::refresh_token_service::RefreshTokenService,
+};
 
 pub async fn register_user(
+    _: DynamicFixedWindowLimit<ClientIpUri, AuthQuota>,
     State(app_state): State<AppState>,
     jar: CookieJar,
     Json(mut body): Json<RegisterUserRequest>,

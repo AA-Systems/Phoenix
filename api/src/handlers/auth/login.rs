@@ -1,16 +1,26 @@
 use std::time::Duration;
 
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::State,
+    http::StatusCode,
+};
 use axum_extra::extract::CookieJar;
+use axum_limit::DynamicFixedWindowLimit;
 use db::{sessions::insert::insert, users::login::find_by_email};
 use sqlx::types::chrono::Utc;
 use types::auth::{auth_response::AuthResponse, login_user_request::LoginUserRequest};
 use validator::Validate;
 
-use crate::{app_state::AppState, services::refresh_token_service::RefreshTokenService};
+use crate::{
+    app_state::{AppState, AuthQuota},
+    middlewares::rate_limit_key::ClientIpUri,
+    services::refresh_token_service::RefreshTokenService,
+};
 
 pub async fn login_user(
+    _: DynamicFixedWindowLimit<ClientIpUri, AuthQuota>,
     State(app_state): State<AppState>,
     jar: CookieJar,
     Json(mut body): Json<LoginUserRequest>,
@@ -19,18 +29,19 @@ pub async fn login_user(
     body.validate()
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
 
-    let credentials = find_by_email(&app_state.pool, &body.email)
-        .await
-        .map_err(|error| match error {
-            sqlx::Error::RowNotFound => (
-                StatusCode::UNAUTHORIZED,
-                "Invalid email or password".to_string(),
-            ),
-            _ => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal server error".to_string(),
-            ),
-        })?;
+    let credentials =
+        find_by_email(&app_state.pool, &body.email)
+            .await
+            .map_err(|error| match error {
+                sqlx::Error::RowNotFound => (
+                    StatusCode::UNAUTHORIZED,
+                    "Invalid email or password".to_string(),
+                ),
+                _ => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal server error".to_string(),
+                ),
+            })?;
 
     let stored_password_hash = credentials.password_hash.clone();
     let password_valid = tokio::task::spawn_blocking(move || {

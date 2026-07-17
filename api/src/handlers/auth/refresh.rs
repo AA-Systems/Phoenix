@@ -1,11 +1,17 @@
 use axum::{extract::State, http::StatusCode};
 use axum_extra::extract::CookieJar;
+use axum_limit::DynamicFixedWindowLimit;
 use db::{sessions::rotate::rotate, users::find_by_id::find_by_id};
 use types::auth::auth_response::AuthResponse;
 
-use crate::{app_state::AppState, services::refresh_token_service::RefreshTokenService};
+use crate::{
+    app_state::{AppState, AuthQuota},
+    middlewares::rate_limit_key::ClientIpUri,
+    services::refresh_token_service::RefreshTokenService,
+};
 
 pub async fn refresh_token(
+    _: DynamicFixedWindowLimit<ClientIpUri, AuthQuota>,
     State(app_state): State<AppState>,
     jar: CookieJar,
 ) -> Result<AuthResponse, (StatusCode, String)> {

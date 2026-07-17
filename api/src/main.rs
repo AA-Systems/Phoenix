@@ -4,6 +4,7 @@ use api::{
     services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
 };
 use axum::http::Method;
+use axum_limit::Quota;
 use common::config::Config;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
@@ -62,12 +63,14 @@ async fn main() {
         cookie_secure: config.cookie_secure,
     };
 
-    let app_state = AppState {
-        pool: pool,
-        admin_api_token: config.admin_api_token,
+    let app_state = AppState::new(
+        pool,
+        config.admin_api_token,
         token_service,
         refresh_token_config,
-    };
+        Quota::per_minute(10),
+        Quota::per_minute(5),
+    );
 
     // Initialize router
     let app = build_app(app_state).layer(ServiceBuilder::new().layer(cors_layer));
@@ -78,5 +81,10 @@ async fn main() {
 
     // Start server
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
-    let _ = axum::serve(listener, app).await.unwrap();
+    let _ = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }

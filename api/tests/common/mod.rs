@@ -11,6 +11,7 @@ use api::{
     app_state::AppState,
     services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
 };
+use axum_limit::Quota;
 use sqlx::postgres::PgPoolOptions;
 
 pub const ADMIN_TOKEN: &str = "test-token";
@@ -49,10 +50,13 @@ pub async fn test_state() -> AppState {
         cookie_secure: false,
     };
 
-    AppState {
+    AppState::new(
         pool,
-        admin_api_token: ADMIN_TOKEN.into(),
+        ADMIN_TOKEN.into(),
         token_service,
         refresh_token_config,
-    }
+        // High limits so integration tests do not trip rate limiting.
+        Quota::per_second(10_000),
+        Quota::per_second(10_000),
+    )
 }
