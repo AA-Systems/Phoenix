@@ -1,7 +1,8 @@
 import { clearSession, getSession, saveSession } from "@/lib/session";
-import type { AssetBalance, AuthResponse } from "@/lib/types";
+import type { AssetBalance, AuthResponse, Session } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+let refreshPromise: Promise<Session> | null = null;
 
 type RequestOptions = RequestInit & {
   token?: string;
@@ -61,15 +62,37 @@ export async function logout() {
   }
 }
 
-async function refreshSession() {
-  const auth = await request<AuthResponse>("/api/v1/auth/refresh", {
-    method: "POST",
-  });
-  return saveSession(auth);
+function refreshSession(): Promise<Session> {
+  if (!refreshPromise) {
+    refreshPromise = request<AuthResponse>("/api/v1/auth/refresh", {
+      method: "POST",
+    })
+      .then(saveSession)
+      .catch((error) => {
+        if (error instanceof ApiError && error.status === 401) clearSession();
+        throw error;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
+export async function restoreSession(): Promise<Session | null> {
+  const session = getSession();
+  if (session && session.expiresAt > Date.now() + 5_000) return session;
+
+  try {
+    return await refreshSession();
+  } catch {
+    return null;
+  }
 }
 
 export async function getBalances(): Promise<AssetBalance[]> {
-  let session = getSession();
+  let session = await restoreSession();
   if (!session) throw new ApiError(401, "Please log in to view balances.");
 
   try {

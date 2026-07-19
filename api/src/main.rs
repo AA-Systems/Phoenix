@@ -1,5 +1,5 @@
 use api::{
-    app_state::AppState,
+    app_state::{AppState, RateLimitQuotas},
     build_app,
     services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
 };
@@ -36,7 +36,7 @@ async fn main() {
     let frontend_url = config.frontend_url;
     let origins = [frontend_url.parse().unwrap()];
     let cors_layer = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods([Method::GET, Method::POST, Method::PATCH])
         .allow_headers([AUTHORIZATION, CONTENT_TYPE])
         .allow_credentials(true)
         .allow_origin(origins);
@@ -58,7 +58,7 @@ async fn main() {
         &public_key_pem,
         config.jwt_issuer,
         config.jwt_audience,
-        config.access_token_ttl_seconds as u64,
+        config.access_token_ttl_seconds,
     )
     .expect("cannot initialize token service");
 
@@ -72,8 +72,12 @@ async fn main() {
         config.admin_api_token,
         token_service,
         refresh_token_config,
-        Quota::per_minute(10),
-        Quota::per_minute(5),
+        RateLimitQuotas {
+            auth: Quota::per_minute(10),
+            health: Quota::per_minute(5),
+            market: Quota::per_minute(5),
+            asset: Quota::per_minute(5),
+        },
     );
 
     // Initialize router
@@ -85,7 +89,7 @@ async fn main() {
 
     // Start server
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
-    let _ = axum::serve(
+    axum::serve(
         listener,
         app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )

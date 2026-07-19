@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { logout } from "@/lib/api";
+import { logout, restoreSession } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
@@ -19,8 +19,15 @@ export function SiteHeader() {
   useEffect(() => {
     const sync = () => setSession(getSession());
     sync();
+    let active = true;
+    restoreSession().then((restored) => {
+      if (active) setSession(restored);
+    });
     window.addEventListener("cex-session", sync);
-    return () => window.removeEventListener("cex-session", sync);
+    return () => {
+      active = false;
+      window.removeEventListener("cex-session", sync);
+    };
   }, []);
 
   async function handleLogout() {

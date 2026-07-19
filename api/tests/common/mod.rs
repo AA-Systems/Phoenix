@@ -10,7 +10,7 @@ pub use balances::credit_balance_req::credit_balance_req;
 pub use markets::insert_market_req::insert_market_req;
 
 use api::{
-    app_state::AppState,
+    app_state::{AppState, RateLimitQuotas},
     services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
 };
 use axum_limit::Quota;
@@ -23,6 +23,10 @@ pub const TEST_JWT_AUDIENCE: &str = "exchange-api-test";
 pub const TEST_ACCESS_TOKEN_TTL_SECONDS: u64 = 900;
 
 pub async fn test_state() -> AppState {
+    test_state_with_resource_quotas(Quota::per_second(10_000), Quota::per_second(10_000)).await
+}
+
+pub async fn test_state_with_resource_quotas(market_quota: Quota, asset_quota: Quota) -> AppState {
     let pool = PgPoolOptions::new()
         .connect(TEST_DATABASE_URL)
         .await
@@ -57,8 +61,11 @@ pub async fn test_state() -> AppState {
         ADMIN_TOKEN.into(),
         token_service,
         refresh_token_config,
-        // High limits so integration tests do not trip rate limiting.
-        Quota::per_second(10_000),
-        Quota::per_second(10_000),
+        RateLimitQuotas {
+            auth: Quota::per_second(10_000),
+            health: Quota::per_second(10_000),
+            market: market_quota,
+            asset: asset_quota,
+        },
     )
 }

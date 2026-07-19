@@ -14,6 +14,7 @@ use crate::common::{
 const VALID_PASSWORD: &str = "StrongPassword123!";
 
 #[tokio::test]
+#[serial_test::serial]
 async fn credit_balance_requires_admin_token() {
     let app = build_app(test_state().await);
     let request = credit_balance_req(uuid::Uuid::new_v4(), "USDC", 100, false);
@@ -22,6 +23,7 @@ async fn credit_balance_requires_admin_token() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn credit_balance_then_list_balances() {
     let app = build_app(test_state().await);
     let email = unique_email();

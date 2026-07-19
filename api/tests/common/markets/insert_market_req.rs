@@ -16,7 +16,11 @@ pub fn insert_market_req(
             "symbol": symbol,
             "name": name,
             "base_asset_symbol": base_asset_symbol,
-            "quote_asset_symbol": quote_asset_symbol
+            "quote_asset_symbol": quote_asset_symbol,
+            "price_tick_size": 10_000,
+            "quantity_step_size": 1_000_000,
+            "min_order_quantity": 10_000_000,
+            "min_order_notional": 5_000_000
         })
         .to_string(),
     );

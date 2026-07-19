@@ -1,5 +1,5 @@
 use api::{
-    app_state::AppState,
+    app_state::{AppState, RateLimitQuotas},
     build_app,
     services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
 };
@@ -15,6 +15,7 @@ use crate::common::{
 };
 
 #[tokio::test]
+#[serial_test::serial]
 async fn test_health_endpoint() {
     let app = build_app(test_state().await);
     let request = Request::builder()
@@ -29,6 +30,7 @@ async fn test_health_endpoint() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn health_endpoint_enforces_rate_limit() {
     let pool = PgPoolOptions::new()
         .connect(TEST_DATABASE_URL)
@@ -55,8 +57,12 @@ async fn health_endpoint_enforces_rate_limit() {
             refresh_token_ttl_seconds: 2592000,
             cookie_secure: false,
         },
-        Quota::per_minute(10),
-        Quota::per_minute(5),
+        RateLimitQuotas {
+            auth: Quota::per_minute(10),
+            health: Quota::per_minute(5),
+            market: Quota::per_minute(5),
+            asset: Quota::per_minute(5),
+        },
     );
     let app = build_app(state);
 

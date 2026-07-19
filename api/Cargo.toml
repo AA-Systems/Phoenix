@@ -28,3 +28,6 @@ hex = "0.4.3"
 axum-extra = { version = "0.12", features = ["cookie"] }
 time = "0.3.53"
 axum-limit = "0.1.0"
+
+[dev-dependencies]
+serial_test = "3.4.0"

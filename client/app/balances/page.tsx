@@ -37,11 +37,6 @@ export default function BalancesPage() {
   }
 
   useEffect(() => {
-    if (!getSession()) {
-      router.replace("/login");
-      return;
-    }
-
     let active = true;
     getBalances()
       .then((data) => {
@@ -49,6 +44,10 @@ export default function BalancesPage() {
       })
       .catch((caught) => {
         if (active) {
+          if (!getSession()) {
+            router.replace("/login");
+            return;
+          }
           setError(
             caught instanceof Error
               ? caught.message

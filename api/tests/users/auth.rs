@@ -16,6 +16,7 @@ use crate::common::{
 const VALID_PASSWORD: &str = "StrongPassword123!";
 
 #[tokio::test]
+#[serial_test::serial]
 async fn rejects_a_weak_password() {
     let app = build_app(test_state().await);
     let request = register_user_req("Test User", &unique_email(), "weak-password");
@@ -26,6 +27,7 @@ async fn rejects_a_weak_password() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn registers_user_and_session_then_rejects_duplicate_email() {
     let state = test_state().await;
     let app = build_app(state.clone());
@@ -75,6 +77,7 @@ async fn registers_user_and_session_then_rejects_duplicate_email() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn logs_in_registered_user_and_rejects_wrong_password() {
     let state = test_state().await;
     let app = build_app(state.clone());
@@ -130,6 +133,7 @@ async fn logs_in_registered_user_and_rejects_wrong_password() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn refreshes_access_token_and_rejects_reuse_of_old_cookie() {
     let state = test_state().await;
     let app = build_app(state.clone());
@@ -187,6 +191,7 @@ async fn refreshes_access_token_and_rejects_reuse_of_old_cookie() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn me_requires_valid_access_token() {
     let app = build_app(test_state().await);
     let email = unique_email();
@@ -221,6 +226,7 @@ async fn me_requires_valid_access_token() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn logout_revokes_refresh_token_and_clears_cookie() {
     let app = build_app(test_state().await);
     let email = unique_email();

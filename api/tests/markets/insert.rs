@@ -6,6 +6,7 @@ use types::markets::insert_market_response::InsertMarketBody;
 use crate::common::{insert_asset_req, insert_market_req, test_state};
 
 #[tokio::test]
+#[serial_test::serial]
 async fn test_insert_market_without_token() {
     let app = build_app(test_state().await);
 
@@ -16,6 +17,7 @@ async fn test_insert_market_without_token() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn test_insert_market_then_duplicate() {
     let state = test_state().await;
     let app = build_app(state.clone());

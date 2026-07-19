@@ -1,12 +1,28 @@
-use axum::{Router, middleware, routing::post};
+use axum::{
+    Router, middleware,
+    routing::{get, patch, post},
+};
 
 use crate::{
-    app_state::AppState, handlers::markets::insert_markets::insert_market,
+    app_state::AppState,
+    handlers::markets::{
+        get_markets::{get_market, list_markets},
+        insert_markets::insert_market,
+        update_market::{set_market_config, set_market_status},
+    },
     middlewares::admin_auth::admin_auth,
 };
 
-pub fn markets_admin_router(app_state: AppState) -> Router<AppState> {
-    Router::new()
+pub fn markets_router(app_state: AppState) -> Router<AppState> {
+    let public_routes = Router::new()
+        .route("/", get(list_markets))
+        .route("/{base}/{quote}", get(get_market));
+
+    let admin_routes = Router::new()
         .route("/admin/insert", post(insert_market))
-        .layer(middleware::from_fn_with_state(app_state, admin_auth))
+        .route("/admin/{id}/status", patch(set_market_status))
+        .route("/admin/{id}/config", patch(set_market_config))
+        .layer(middleware::from_fn_with_state(app_state, admin_auth));
+
+    Router::new().merge(public_routes).merge(admin_routes)
 }

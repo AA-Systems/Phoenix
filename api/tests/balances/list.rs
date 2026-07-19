@@ -12,6 +12,7 @@ use crate::common::{
 const VALID_PASSWORD: &str = "StrongPassword123!";
 
 #[tokio::test]
+#[serial_test::serial]
 async fn get_balances_requires_access_token() {
     let app = build_app(test_state().await);
 
@@ -20,6 +21,7 @@ async fn get_balances_requires_access_token() {
 }
 
 #[tokio::test]
+#[serial_test::serial]
 async fn get_balances_returns_empty_list_for_new_user() {
     let app = build_app(test_state().await);
     let email = unique_email();

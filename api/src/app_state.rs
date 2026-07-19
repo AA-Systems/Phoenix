@@ -12,8 +12,15 @@ pub struct AppState {
     pub token_service: TokenService,
     pub refresh_token_config: RefreshTokenConfig,
     limits: LimitState<ClientIpUri, FixedWindowPolicy>,
-    auth_quota: Quota,
-    health_quota: Quota,
+    quotas: RateLimitQuotas,
+}
+
+#[derive(Clone)]
+pub struct RateLimitQuotas {
+    pub auth: Quota,
+    pub health: Quota,
+    pub market: Quota,
+    pub asset: Quota,
 }
 
 impl AppState {
@@ -22,8 +29,7 @@ impl AppState {
         admin_api_token: String,
         token_service: TokenService,
         refresh_token_config: RefreshTokenConfig,
-        auth_quota: Quota,
-        health_quota: Quota,
+        quotas: RateLimitQuotas,
     ) -> Self {
         Self {
             pool,
@@ -31,8 +37,7 @@ impl AppState {
             token_service,
             refresh_token_config,
             limits: LimitState::default(),
-            auth_quota,
-            health_quota,
+            quotas,
         }
     }
 }
@@ -49,15 +54,33 @@ pub struct AuthQuota(Quota);
 #[derive(Clone, Copy)]
 pub struct HealthQuota(Quota);
 
+#[derive(Clone, Copy)]
+pub struct MarketQuota(Quota);
+
+#[derive(Clone, Copy)]
+pub struct AssetQuota(Quota);
+
 impl FromRef<AppState> for AuthQuota {
     fn from_ref(s: &AppState) -> Self {
-        AuthQuota(s.auth_quota)
+        AuthQuota(s.quotas.auth)
     }
 }
 
 impl FromRef<AppState> for HealthQuota {
     fn from_ref(s: &AppState) -> Self {
-        HealthQuota(s.health_quota)
+        HealthQuota(s.quotas.health)
+    }
+}
+
+impl FromRef<AppState> for MarketQuota {
+    fn from_ref(s: &AppState) -> Self {
+        MarketQuota(s.quotas.market)
+    }
+}
+
+impl FromRef<AppState> for AssetQuota {
+    fn from_ref(s: &AppState) -> Self {
+        AssetQuota(s.quotas.asset)
     }
 }
 
@@ -69,6 +92,18 @@ impl From<AuthQuota> for Quota {
 
 impl From<HealthQuota> for Quota {
     fn from(v: HealthQuota) -> Self {
+        v.0
+    }
+}
+
+impl From<MarketQuota> for Quota {
+    fn from(v: MarketQuota) -> Self {
+        v.0
+    }
+}
+
+impl From<AssetQuota> for Quota {
+    fn from(v: AssetQuota) -> Self {
         v.0
     }
 }

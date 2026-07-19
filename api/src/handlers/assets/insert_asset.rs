@@ -1,13 +1,18 @@
 use axum::{Json, extract::State, http::StatusCode};
+use axum_limit::DynamicFixedWindowLimit;
 use db::assets::insert::insert;
 use types::assets::{
     insert_asset_request::InsertAssetRequest, insert_asset_response::InsertAssetResponse,
 };
 use validator::Validate;
 
-use crate::app_state::AppState;
+use crate::{
+    app_state::{AppState, AssetQuota},
+    middlewares::rate_limit_key::ClientIpUri,
+};
 
 pub async fn insert_asset(
+    _: DynamicFixedWindowLimit<ClientIpUri, AssetQuota>,
     State(app_state): State<AppState>,
     Json(body): Json<InsertAssetRequest>,
 ) -> Result<InsertAssetResponse, (StatusCode, String)> {
