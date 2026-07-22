@@ -7,7 +7,8 @@ use types::{
 use uuid::Uuid;
 
 use crate::{
-    commands::apply_command::ApplyError, helper::quote_notional::quote_notional,
+    commands::apply_command::ApplyError,
+    helper::{match_order::match_order, quote_notional::quote_notional},
     memory::OrderEngineState,
 };
 
@@ -46,20 +47,26 @@ pub fn create_order(
         return Err(ApplyError::BelowMinQuantity);
     }
 
-    let base_asset = state
+    let market_id = market.id;
+    let base_asset_id = market.base_asset_id;
+    let quote_asset_id = market.quote_asset_id;
+    let min_order_notional = market.min_order_notional;
+
+    let base_decimals = state
         .assets
         .iter()
-        .find(|asset| asset.id == market.base_asset_id)
-        .ok_or(ApplyError::AssetNotFound)?;
+        .find(|asset| asset.id == base_asset_id)
+        .ok_or(ApplyError::AssetNotFound)?
+        .decimals;
 
-    let notional = quote_notional(price, quantity, base_asset.decimals)?;
-    if notional < market.min_order_notional {
+    let notional = quote_notional(price, quantity, base_decimals)?;
+    if notional < min_order_notional {
         return Err(ApplyError::BelowMinNotional);
     }
 
     let (reserve_asset_id, reserve_amount) = match order_type {
-        OrderType::Buy => (market.quote_asset_id, notional),
-        OrderType::Sell => (market.base_asset_id, quantity),
+        OrderType::Buy => (quote_asset_id, notional),
+        OrderType::Sell => (base_asset_id, quantity),
     };
 
     let balance = state
@@ -85,24 +92,42 @@ pub fn create_order(
         quantity,
     );
 
-    let book = state
-        .books
-        .entry(market_symbol)
-        .or_insert_with(OrderBook::new);
-
-    let book_order = BookOrder {
-        user_id,
-        order_id: order_id.clone(),
-        quantity,
-    };
-
-    match order_type {
-        OrderType::Buy => book.bids.entry(price).or_default().push_back(book_order),
-        OrderType::Sell => book.asks.entry(price).or_default().push_back(book_order),
-    }
-
-    state.orders.insert(order_id, order);
+    state.orders.insert(order_id.clone(), order);
     state.next_order_id += 1;
+
+    match_order(
+        state,
+        &order_id,
+        market_id,
+        &market_symbol,
+        base_asset_id,
+        quote_asset_id,
+        base_decimals,
+    )?;
+
+    let remaining = state
+        .orders
+        .get(&order_id)
+        .ok_or(ApplyError::OrderNotFound)?
+        .remaining();
+
+    if remaining > 0 {
+        let book = state
+            .books
+            .entry(market_symbol)
+            .or_insert_with(OrderBook::new);
+
+        let book_order = BookOrder {
+            user_id,
+            order_id,
+            quantity: remaining,
+        };
+
+        match order_type {
+            OrderType::Buy => book.bids.entry(price).or_default().push_back(book_order),
+            OrderType::Sell => book.asks.entry(price).or_default().push_back(book_order),
+        }
+    }
 
     Ok(())
 }

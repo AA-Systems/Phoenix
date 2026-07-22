@@ -3,6 +3,7 @@ use types::{
     command::Command,
     order::{OrderStatus, OrderType},
 };
+use uuid::Uuid;
 
 use crate::common::{BUY_NOTIONAL, MARKET, PRICE, QTY, USDC_AVAILABLE, fixture};
 
@@ -12,7 +13,14 @@ fn create_buy_locks_quote_and_rests_on_book() {
 
     apply_command(
         &mut fx.state,
-        Command::CreateOrder(fx.user_id, MARKET.into(), OrderType::Buy, PRICE, QTY),
+        Command::CreateOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Buy,
+            price: PRICE,
+            quantity: QTY,
+        },
     )
     .unwrap();
 

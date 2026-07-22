@@ -3,6 +3,7 @@ use types::{
     command::Command,
     order::{OrderStatus, OrderType},
 };
+use uuid::Uuid;
 
 use crate::common::{BUY_NOTIONAL, MARKET, PRICE, QTY, USDC_AVAILABLE, fixture};
 
@@ -12,11 +13,26 @@ fn cancel_unlocks_quote_and_removes_from_book() {
 
     apply_command(
         &mut fx.state,
-        Command::CreateOrder(fx.user_id, MARKET.into(), OrderType::Buy, PRICE, QTY),
+        Command::CreateOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Buy,
+            price: PRICE,
+            quantity: QTY,
+        },
     )
     .unwrap();
 
-    apply_command(&mut fx.state, Command::CancelOrder(fx.user_id, "1".into())).unwrap();
+    apply_command(
+        &mut fx.state,
+        Command::CancelOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.user_id,
+            order_id: "1".into(),
+        },
+    )
+    .unwrap();
 
     let usdc = fx.state.balances.get(&(fx.user_id, fx.usdc_id)).unwrap();
     assert_eq!(usdc.available, USDC_AVAILABLE);
@@ -36,13 +52,24 @@ fn cancel_rejects_other_users_order() {
 
     apply_command(
         &mut fx.state,
-        Command::CreateOrder(fx.user_id, MARKET.into(), OrderType::Buy, PRICE, QTY),
+        Command::CreateOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Buy,
+            price: PRICE,
+            quantity: QTY,
+        },
     )
     .unwrap();
 
     let err = apply_command(
         &mut fx.state,
-        Command::CancelOrder(fx.other_user_id, "1".into()),
+        Command::CancelOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.other_user_id,
+            order_id: "1".into(),
+        },
     )
     .unwrap_err();
     assert_eq!(err, ApplyError::Unauthorized);

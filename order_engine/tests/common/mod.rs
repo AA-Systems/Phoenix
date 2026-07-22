@@ -13,11 +13,13 @@ pub const PRICE: i64 = 150_000_000;
 pub const QTY: i64 = 100_000_000;
 pub const BUY_NOTIONAL: i64 = 15_000_000;
 pub const USDC_AVAILABLE: i64 = 100_000_000;
+pub const SOL_AVAILABLE: i64 = 1_000_000_000;
 
 pub struct Fixture {
     pub state: OrderEngineState,
     pub user_id: Uuid,
     pub other_user_id: Uuid,
+    pub sol_id: Uuid,
     pub usdc_id: Uuid,
 }
 
@@ -60,31 +62,38 @@ pub fn fixture() -> Fixture {
         min_order_notional: 5_000_000,
         created_at: now,
     }];
-    state.balances.insert(
-        (user_id, usdc_id),
-        Balance {
-            user_id,
-            asset_id: usdc_id,
-            available: USDC_AVAILABLE,
-            locked: 0,
-            updated_at: now,
-        },
-    );
-    state.balances.insert(
-        (user_id, sol_id),
-        Balance {
-            user_id,
-            asset_id: sol_id,
-            available: 1_000_000_000,
-            locked: 0,
-            updated_at: now,
-        },
-    );
+
+    for (uid, available_sol, available_usdc) in [
+        (user_id, SOL_AVAILABLE, USDC_AVAILABLE),
+        (other_user_id, SOL_AVAILABLE, USDC_AVAILABLE),
+    ] {
+        state.balances.insert(
+            (uid, usdc_id),
+            Balance {
+                user_id: uid,
+                asset_id: usdc_id,
+                available: available_usdc,
+                locked: 0,
+                updated_at: now,
+            },
+        );
+        state.balances.insert(
+            (uid, sol_id),
+            Balance {
+                user_id: uid,
+                asset_id: sol_id,
+                available: available_sol,
+                locked: 0,
+                updated_at: now,
+            },
+        );
+    }
 
     Fixture {
         state,
         user_id,
         other_user_id,
+        sol_id,
         usdc_id,
     }
 }

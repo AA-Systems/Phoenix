@@ -7,3 +7,4 @@ pub mod markets;
 pub mod order;
 pub mod orderbook;
 pub mod sessions;
+pub mod trade;

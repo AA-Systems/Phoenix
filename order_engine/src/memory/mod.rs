@@ -1,7 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use types::{
     assets::Asset, balances::Balance, markets::Market, order::Order, orderbook::MarketBooks,
+    trade::Trade,
 };
 use uuid::Uuid;
 
@@ -12,6 +13,8 @@ pub struct OrderEngineState {
     pub books: MarketBooks,
     pub markets: Vec<Market>,
     pub assets: Vec<Asset>,
+    pub trades: Vec<Trade>,
+    pub processed_commands: HashSet<Uuid>,
 }
 
 impl OrderEngineState {
@@ -24,6 +27,8 @@ impl OrderEngineState {
             books: HashMap::new(),
             markets: Vec::new(),
             assets: Vec::new(),
+            trades: Vec::new(),
+            processed_commands: HashSet::new(),
         }
     }
 }
