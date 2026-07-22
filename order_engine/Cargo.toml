@@ -1,0 +1,9 @@
+[package]
+name = "order_engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = { version = "0.4.45", features = ["serde"] }
+types = { path = "../types" }
+uuid = { version = "1.23.5", features = ["v4"] }

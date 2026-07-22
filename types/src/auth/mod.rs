@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
+use crate::balances::AssetBalance;
+
 pub mod access_token_claims;
 pub mod auth_response;
 pub mod login_user_request;
@@ -35,4 +37,9 @@ impl UserCredentials {
             updated_at: self.updated_at,
         }
     }
+}
+
+pub struct UserWithBalances {
+    pub id: uuid::Uuid,
+    pub balances: Vec<AssetBalance>,
 }
