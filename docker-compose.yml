@@ -16,6 +16,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cex
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build:
       context: .
@@ -34,6 +45,22 @@ services:
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt/jwt-public.pem
     volumes:
       - ./secrets:/run/secrets/jwt:ro
+
+  order_engine:
+    build:
+      context: .
+      dockerfile: order_engine/Dockerfile
+    container_name: order_engine_cex
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
 
   client:
     build:

@@ -15,6 +15,15 @@ services:
       - "3000:3000"
     restart: unless-stopped
 
+  order_engine:
+    build:
+      context: .
+      dockerfile: order_engine/Dockerfile
+    container_name: order_engine_cex
+    env_file:
+      - .env
+    restart: unless-stopped
+
   client:
     build:
       context: ./client
