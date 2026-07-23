@@ -15,14 +15,18 @@ use api::{
     services::{refresh_token_service::RefreshTokenConfig, token_service::TokenService},
 };
 use axum_limit::Quota;
-use redis::Client;
+use redis::streams::{StreamReadOptions, StreamReadReply};
+use redis::{AsyncCommands, Client};
 use sqlx::postgres::PgPoolOptions;
+use types::query::{EngineQuery, EngineReply};
 
 pub const ADMIN_TOKEN: &str = "test-token";
 pub const TEST_DATABASE_URL: &str = "postgres://admin:supersecretpassword@localhost:5433/cex_test";
 pub const TEST_REDIS_URL: &str = "redis://localhost:6379";
 pub const TEST_ORDER_COMMANDS_STREAM: &str = "order-commands-test";
 pub const TEST_ENGINE_COMMANDS_STREAM: &str = "engine-commands-test";
+pub const TEST_ENGINE_QUERIES_STREAM: &str = "engine-queries-test";
+pub const TEST_ENGINE_QUERY_TIMEOUT_SECS: f64 = 2.0;
 pub const TEST_JWT_ISSUER: &str = "centralized-exchange-test";
 pub const TEST_JWT_AUDIENCE: &str = "exchange-api-test";
 pub const TEST_ACCESS_TOKEN_TTL_SECONDS: u64 = 900;
@@ -55,6 +59,10 @@ pub async fn test_state_with_resource_quotas(market_quota: Quota, asset_quota: Q
         .arg(TEST_ENGINE_COMMANDS_STREAM)
         .query_async(&mut redis)
         .await;
+    let _: Result<(), redis::RedisError> = redis::cmd("DEL")
+        .arg(TEST_ENGINE_QUERIES_STREAM)
+        .query_async(&mut redis)
+        .await;
 
     let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
     let private_key_pem = fs::read(repository_root.join("secrets/jwt-private.pem"))
@@ -83,6 +91,8 @@ pub async fn test_state_with_resource_quotas(market_quota: Quota, asset_quota: Q
         redis,
         TEST_ORDER_COMMANDS_STREAM.to_string(),
         TEST_ENGINE_COMMANDS_STREAM.to_string(),
+        TEST_ENGINE_QUERIES_STREAM.to_string(),
+        TEST_ENGINE_QUERY_TIMEOUT_SECS,
         RateLimitQuotas {
             auth: Quota::per_second(10_000),
             health: Quota::per_second(10_000),
@@ -90,4 +100,75 @@ pub async fn test_state_with_resource_quotas(market_quota: Quota, asset_quota: Q
             asset: asset_quota,
         },
     )
+}
+
+pub async fn spawn_empty_balance_query_responder() -> tokio::task::JoinHandle<()> {
+    let client = Client::open(TEST_REDIS_URL).unwrap();
+    let mut conn = redis::aio::ConnectionManager::new(client).await.unwrap();
+
+    let _: Result<(), redis::RedisError> = redis::cmd("DEL")
+        .arg(TEST_ENGINE_QUERIES_STREAM)
+        .query_async(&mut conn)
+        .await;
+
+    let group = "test-query-responder";
+    let _: Result<(), redis::RedisError> = redis::cmd("XGROUP")
+        .arg("CREATE")
+        .arg(TEST_ENGINE_QUERIES_STREAM)
+        .arg(group)
+        .arg("0")
+        .arg("MKSTREAM")
+        .query_async(&mut conn)
+        .await;
+
+    tokio::spawn(async move {
+        let opts = StreamReadOptions::default()
+            .group(group, "responder-1")
+            .count(1)
+            .block(2000);
+
+        loop {
+            let reply: Result<StreamReadReply, redis::RedisError> = conn
+                .xread_options(&[TEST_ENGINE_QUERIES_STREAM], &[">"], &opts)
+                .await;
+
+            let Ok(reply) = reply else {
+                continue;
+            };
+
+            for stream_key in reply.keys {
+                for entry in stream_key.ids {
+                    let payload = match entry.map.get("payload") {
+                        Some(redis::Value::BulkString(bytes)) => {
+                            String::from_utf8(bytes.clone()).ok()
+                        }
+                        Some(redis::Value::SimpleString(text)) => Some(text.clone()),
+                        _ => None,
+                    };
+
+                    if let Some(payload) = payload {
+                        if let Ok(EngineQuery::GetBalances { request_id, .. }) =
+                            serde_json::from_str::<EngineQuery>(&payload)
+                        {
+                            let reply = EngineReply::GetBalances {
+                                request_id,
+                                balances: Vec::new(),
+                            };
+                            let body = serde_json::to_string(&reply).unwrap();
+                            let key = format!("engine-reply:{request_id}");
+                            let _: Result<(), redis::RedisError> = conn.lpush(&key, body).await;
+                            let _: Result<(), redis::RedisError> = conn.expire(&key, 30).await;
+                        }
+                    }
+
+                    let _: Result<u64, redis::RedisError> = redis::cmd("XACK")
+                        .arg(TEST_ENGINE_QUERIES_STREAM)
+                        .arg(group)
+                        .arg(&entry.id)
+                        .query_async(&mut conn)
+                        .await;
+                }
+            }
+        }
+    })
 }

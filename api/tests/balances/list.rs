@@ -5,7 +5,7 @@ use types::auth::auth_response::AuthBody;
 use types::balances::AssetBalance;
 
 use crate::common::{
-    test_state,
+    spawn_empty_balance_query_responder, test_state,
     users::insert_user_req::{get_balances_req, register_user_req, unique_email},
 };
 
@@ -24,6 +24,7 @@ async fn get_balances_requires_access_token() {
 #[serial_test::serial]
 async fn get_balances_returns_empty_list_for_new_user() {
     let app = build_app(test_state().await);
+    let responder = spawn_empty_balance_query_responder().await;
     let email = unique_email();
 
     let request = register_user_req("Test User", &email, VALID_PASSWORD);
@@ -42,4 +43,6 @@ async fn get_balances_returns_empty_list_for_new_user() {
     let balances: Vec<AssetBalance> =
         serde_json::from_slice(&bytes).expect("balances should return JSON array");
     assert!(balances.is_empty());
+
+    responder.abort();
 }

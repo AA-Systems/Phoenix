@@ -6,5 +6,6 @@ pub mod ledger_entries;
 pub mod markets;
 pub mod order;
 pub mod orderbook;
+pub mod query;
 pub mod sessions;
 pub mod trade;

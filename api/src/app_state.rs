@@ -15,6 +15,8 @@ pub struct AppState {
     pub redis: ConnectionManager,
     pub order_commands_stream: String,
     pub engine_commands_stream: String,
+    pub engine_queries_stream: String,
+    pub engine_query_timeout_secs: f64,
     limits: LimitState<ClientIpUri, FixedWindowPolicy>,
     quotas: RateLimitQuotas,
 }
@@ -36,6 +38,8 @@ impl AppState {
         redis: ConnectionManager,
         order_commands_stream: String,
         engine_commands_stream: String,
+        engine_queries_stream: String,
+        engine_query_timeout_secs: f64,
         quotas: RateLimitQuotas,
     ) -> Self {
         Self {
@@ -46,6 +50,8 @@ impl AppState {
             redis,
             order_commands_stream,
             engine_commands_stream,
+            engine_queries_stream,
+            engine_query_timeout_secs,
             limits: LimitState::default(),
             quotas,
         }

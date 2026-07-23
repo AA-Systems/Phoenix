@@ -81,6 +81,8 @@ async fn main() {
         redis,
         config.order_commands_stream,
         config.engine_commands_stream,
+        config.engine_queries_stream,
+        config.engine_query_timeout_secs,
         RateLimitQuotas {
             auth: Quota::per_minute(10),
             health: Quota::per_minute(5),

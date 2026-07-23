@@ -13,7 +13,7 @@ pub struct Balance {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct AssetBalance {
     pub asset_id: uuid::Uuid,
     pub symbol: String,

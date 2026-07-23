@@ -15,6 +15,8 @@ pub struct Config {
     pub redis_url: String,
     pub order_commands_stream: String,
     pub engine_commands_stream: String,
+    pub engine_queries_stream: String,
+    pub engine_query_timeout_secs: f64,
 }
 
 impl Config {
@@ -47,6 +49,12 @@ impl Config {
                 .unwrap_or_else(|_| "order-commands".to_string()),
             engine_commands_stream: env::var("REDIS_ENGINE_COMMANDS_STREAM")
                 .unwrap_or_else(|_| "engine-commands".to_string()),
+            engine_queries_stream: env::var("REDIS_ENGINE_QUERIES_STREAM")
+                .unwrap_or_else(|_| "engine-queries".to_string()),
+            engine_query_timeout_secs: env::var("REDIS_ENGINE_QUERY_TIMEOUT_SECS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(3.0),
         }
     }
 }
