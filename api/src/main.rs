@@ -88,6 +88,7 @@ async fn main() {
             health: Quota::per_minute(5),
             market: Quota::per_minute(5),
             asset: Quota::per_minute(5),
+            order: Quota::per_minute(30),
         },
     );
 

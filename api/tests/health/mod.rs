@@ -74,6 +74,7 @@ async fn health_endpoint_enforces_rate_limit() {
             health: Quota::per_minute(5),
             market: Quota::per_minute(5),
             asset: Quota::per_minute(5),
+            order: Quota::per_minute(30),
         },
     );
     let app = build_app(state);

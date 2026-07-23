@@ -1,4 +1,5 @@
 use axum::{Extension, Json, extract::State, http::StatusCode};
+use axum_limit::DynamicFixedWindowLimit;
 use db::markets::get::get_by_symbol;
 use redis::AsyncCommands;
 use types::command::Command;
@@ -7,9 +8,13 @@ use types::order::create_order_response::CreateOrderResponse;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{app_state::AppState, middlewares::jwt_middleware::AuthUser};
+use crate::{
+    app_state::{AppState, OrderQuota},
+    middlewares::{jwt_middleware::AuthUser, rate_limit_key::ClientIpUri},
+};
 
 pub async fn create_order(
+    _: DynamicFixedWindowLimit<ClientIpUri, OrderQuota>,
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Json(mut body): Json<CreateOrderRequest>,

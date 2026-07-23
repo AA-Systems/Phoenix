@@ -7,6 +7,7 @@ use crate::{
     app_state::AppState,
     handlers::markets::{
         get_markets::{get_market, list_markets},
+        get_order_book::get_order_book_depth,
         insert_markets::insert_market,
         update_market::{set_market_config, set_market_status},
     },
@@ -16,6 +17,7 @@ use crate::{
 pub fn markets_router(app_state: AppState) -> Router<AppState> {
     let public_routes = Router::new()
         .route("/", get(list_markets))
+        .route("/book", post(get_order_book_depth))
         .route("/{base}/{quote}", get(get_market));
 
     let admin_routes = Router::new()

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use redis::{Value, aio::ConnectionManager, AsyncCommands};
+use redis::{AsyncCommands, Value, aio::ConnectionManager};
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 use types::query::EngineQuery;

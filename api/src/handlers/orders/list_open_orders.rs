@@ -4,21 +4,21 @@ use axum::{
     http::StatusCode,
 };
 use axum_limit::DynamicFixedWindowLimit;
-use types::balances::AssetBalance;
+use types::order::OpenOrderView;
 
 use crate::{
-    app_state::{AppState, AuthQuota},
+    app_state::{AppState, OrderQuota},
     middlewares::{jwt_middleware::AuthUser, rate_limit_key::ClientIpUri},
-    services::engine_query::{EngineQueryError, get_balances},
+    services::engine_query::{EngineQueryError, get_open_orders},
 };
 
-pub async fn get_balance_by_user_id(
-    _: DynamicFixedWindowLimit<ClientIpUri, AuthQuota>,
+pub async fn list_open_orders(
+    _: DynamicFixedWindowLimit<ClientIpUri, OrderQuota>,
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
-) -> Result<Json<Vec<AssetBalance>>, (StatusCode, String)> {
+) -> Result<Json<Vec<OpenOrderView>>, (StatusCode, String)> {
     let mut redis = app_state.redis.clone();
-    let balances = get_balances(
+    let orders = get_open_orders(
         &mut redis,
         &app_state.engine_queries_stream,
         auth_user.user_id,
@@ -38,5 +38,5 @@ pub async fn get_balance_by_user_id(
         }
     })?;
 
-    Ok(Json(balances))
+    Ok(Json(orders))
 }

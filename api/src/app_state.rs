@@ -27,6 +27,7 @@ pub struct RateLimitQuotas {
     pub health: Quota,
     pub market: Quota,
     pub asset: Quota,
+    pub order: Quota,
 }
 
 impl AppState {
@@ -76,6 +77,9 @@ pub struct MarketQuota(Quota);
 #[derive(Clone, Copy)]
 pub struct AssetQuota(Quota);
 
+#[derive(Clone, Copy)]
+pub struct OrderQuota(Quota);
+
 impl FromRef<AppState> for AuthQuota {
     fn from_ref(s: &AppState) -> Self {
         AuthQuota(s.quotas.auth)
@@ -100,6 +104,12 @@ impl FromRef<AppState> for AssetQuota {
     }
 }
 
+impl FromRef<AppState> for OrderQuota {
+    fn from_ref(s: &AppState) -> Self {
+        OrderQuota(s.quotas.order)
+    }
+}
+
 impl From<AuthQuota> for Quota {
     fn from(v: AuthQuota) -> Self {
         v.0
@@ -120,6 +130,12 @@ impl From<MarketQuota> for Quota {
 
 impl From<AssetQuota> for Quota {
     fn from(v: AssetQuota) -> Self {
+        v.0
+    }
+}
+
+impl From<OrderQuota> for Quota {
+    fn from(v: OrderQuota) -> Self {
         v.0
     }
 }

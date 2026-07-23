@@ -1,4 +1,5 @@
 use axum::{Extension, Json, extract::State, http::StatusCode};
+use axum_limit::DynamicFixedWindowLimit;
 use redis::AsyncCommands;
 use types::command::Command;
 use types::order::cancel_order_request::CancelOrderRequest;
@@ -6,9 +7,13 @@ use types::order::cancel_order_response::CancelOrderResponse;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::{app_state::AppState, middlewares::jwt_middleware::AuthUser};
+use crate::{
+    app_state::{AppState, OrderQuota},
+    middlewares::{jwt_middleware::AuthUser, rate_limit_key::ClientIpUri},
+};
 
 pub async fn cancel_order(
+    _: DynamicFixedWindowLimit<ClientIpUri, OrderQuota>,
     State(app_state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Json(mut body): Json<CancelOrderRequest>,

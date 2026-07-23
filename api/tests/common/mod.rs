@@ -98,6 +98,7 @@ pub async fn test_state_with_resource_quotas(market_quota: Quota, asset_quota: Q
             health: Quota::per_second(10_000),
             market: market_quota,
             asset: asset_quota,
+            order: Quota::per_second(10_000),
         },
     )
 }
@@ -147,15 +148,34 @@ pub async fn spawn_empty_balance_query_responder() -> tokio::task::JoinHandle<()
                     };
 
                     if let Some(payload) = payload {
-                        if let Ok(EngineQuery::GetBalances { request_id, .. }) =
-                            serde_json::from_str::<EngineQuery>(&payload)
-                        {
-                            let reply = EngineReply::GetBalances {
-                                request_id,
-                                balances: Vec::new(),
+                        if let Ok(query) = serde_json::from_str::<EngineQuery>(&payload) {
+                            let reply = match query {
+                                EngineQuery::GetBalances { request_id, .. } => {
+                                    EngineReply::GetBalances {
+                                        request_id,
+                                        balances: Vec::new(),
+                                    }
+                                }
+                                EngineQuery::GetOpenOrders { request_id, .. } => {
+                                    EngineReply::GetOpenOrders {
+                                        request_id,
+                                        orders: Vec::new(),
+                                    }
+                                }
+                                EngineQuery::GetOrderBook {
+                                    request_id,
+                                    market_symbol,
+                                } => EngineReply::GetOrderBook {
+                                    request_id,
+                                    book: Some(types::orderbook::OrderBookDepth {
+                                        market_symbol,
+                                        bids: Vec::new(),
+                                        asks: Vec::new(),
+                                    }),
+                                },
                             };
                             let body = serde_json::to_string(&reply).unwrap();
-                            let key = format!("engine-reply:{request_id}");
+                            let key = format!("engine-reply:{}", reply.request_id());
                             let _: Result<(), redis::RedisError> = conn.lpush(&key, body).await;
                             let _: Result<(), redis::RedisError> = conn.expire(&key, 30).await;
                         }

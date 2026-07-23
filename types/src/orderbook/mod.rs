@@ -1,6 +1,9 @@
 use std::collections::{BTreeMap, HashMap, VecDeque};
 
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+pub mod get_order_book_request;
 
 pub struct BookOrder {
     pub user_id: Uuid,
@@ -32,3 +35,19 @@ impl Default for OrderBook {
 
 /// Engine holds one book per market symbol.
 pub type MarketBooks = HashMap<String, OrderBook>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PriceLevel {
+    pub price: i64,
+    pub quantity: i64,
+    pub order_count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookDepth {
+    pub market_symbol: String,
+    /// Highest bid first.
+    pub bids: Vec<PriceLevel>,
+    /// Lowest ask first.
+    pub asks: Vec<PriceLevel>,
+}
