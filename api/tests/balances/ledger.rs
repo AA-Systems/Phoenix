@@ -85,6 +85,7 @@ async fn list_ledger_returns_persisted_deposit() {
     let command_id = uuid::Uuid::new_v4();
     let intent = LedgerIntent {
         command_id,
+        sequence: 0,
         user_id: registered.user.id,
         asset_id: asset.id,
         entry_type: LedgerEntryType::Deposit,

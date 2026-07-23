@@ -1,6 +1,9 @@
-use order_engine::commands::apply_command::{ApplyError, apply_command};
+use order_engine::commands::apply_command::{
+    ApplyError, ApplyOutcome, apply_command, apply_command_effects,
+};
 use types::{
     command::Command,
+    ledger_entries::LedgerEntryType,
     order::{OrderStatus, OrderType},
 };
 use uuid::Uuid;
@@ -44,6 +47,51 @@ fn cancel_unlocks_quote_and_removes_from_book() {
 
     let book = fx.state.books.get(MARKET).unwrap();
     assert!(book.bids.get(&PRICE).is_none());
+}
+
+#[test]
+fn cancel_emits_unlock_ledger_intent() {
+    let mut fx = fixture();
+
+    apply_command(
+        &mut fx.state,
+        Command::CreateOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Buy,
+            price: PRICE,
+            quantity: QTY,
+        },
+    )
+    .unwrap();
+
+    let command_id = Uuid::new_v4();
+    let outcome = apply_command_effects(
+        &mut fx.state,
+        Command::CancelOrder {
+            command_id,
+            user_id: fx.user_id,
+            order_id: "1".into(),
+        },
+    )
+    .unwrap();
+
+    match outcome {
+        ApplyOutcome::Applied { intents, .. } => {
+            assert_eq!(intents.len(), 1);
+            let intent = &intents[0];
+            assert_eq!(intent.command_id, command_id);
+            assert_eq!(intent.sequence, 0);
+            assert_eq!(intent.entry_type, LedgerEntryType::Unlock);
+            assert_eq!(intent.asset_id, fx.usdc_id);
+            assert_eq!(intent.available_delta, BUY_NOTIONAL);
+            assert_eq!(intent.locked_delta, -BUY_NOTIONAL);
+            assert_eq!(intent.available_after, USDC_AVAILABLE);
+            assert_eq!(intent.locked_after, 0);
+        }
+        other => panic!("expected Applied, got {other:?}"),
+    }
 }
 
 #[test]

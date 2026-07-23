@@ -1,6 +1,7 @@
-use order_engine::commands::apply_command::apply_command;
+use order_engine::commands::apply_command::{ApplyOutcome, apply_command, apply_command_effects};
 use types::{
     command::Command,
+    ledger_entries::LedgerEntryType,
     order::{OrderStatus, OrderType},
 };
 use uuid::Uuid;
@@ -72,6 +73,53 @@ fn full_fill_settles_balances_and_clears_book() {
     let book = fx.state.books.get(MARKET).unwrap();
     assert!(book.bids.is_empty());
     assert!(book.asks.is_empty());
+}
+
+#[test]
+fn matching_buy_emits_lock_then_trade_intents() {
+    let mut fx = fixture();
+
+    apply_command(
+        &mut fx.state,
+        Command::CreateOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.other_user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Sell,
+            price: PRICE,
+            quantity: QTY,
+        },
+    )
+    .unwrap();
+
+    let command_id = Uuid::new_v4();
+    let outcome = apply_command_effects(
+        &mut fx.state,
+        Command::CreateOrder {
+            command_id,
+            user_id: fx.user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Buy,
+            price: PRICE,
+            quantity: QTY,
+        },
+    )
+    .unwrap();
+
+    match outcome {
+        ApplyOutcome::Applied { intents, .. } => {
+            assert_eq!(intents[0].entry_type, LedgerEntryType::Lock);
+            assert_eq!(intents[0].sequence, 0);
+            assert!(intents.len() > 1);
+            assert!(
+                intents[1..]
+                    .iter()
+                    .all(|intent| intent.entry_type == LedgerEntryType::Trade)
+            );
+            assert!(intents.iter().all(|intent| intent.command_id == command_id));
+        }
+        other => panic!("expected Applied, got {other:?}"),
+    }
 }
 
 #[test]

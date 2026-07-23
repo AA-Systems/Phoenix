@@ -41,6 +41,7 @@ pub fn credit_balance(
 
     Ok(LedgerIntent {
         command_id,
+        sequence: 0,
         user_id,
         asset_id,
         entry_type: LedgerEntryType::Deposit,

@@ -239,6 +239,7 @@ async fn seed_deposit(pool: &PgPool, user_id: Uuid, asset_id: Uuid, available: i
     let command_id = Uuid::new_v4();
     let intent = LedgerIntent {
         command_id,
+        sequence: 0,
         user_id,
         asset_id,
         entry_type: LedgerEntryType::Deposit,
@@ -278,6 +279,7 @@ async fn seed_lock(pool: &PgPool, user_id: Uuid, asset_id: Uuid, amount: i64) {
     let command_id = Uuid::new_v4();
     let intent = LedgerIntent {
         command_id,
+        sequence: 0,
         user_id,
         asset_id,
         entry_type: LedgerEntryType::Lock,

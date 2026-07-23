@@ -47,6 +47,7 @@ fn credit_balance_emits_deposit_ledger_intent() {
             assert_eq!(intents.len(), 1);
             let intent = &intents[0];
             assert_eq!(intent.command_id, command_id);
+            assert_eq!(intent.sequence, 0);
             assert_eq!(intent.entry_type, LedgerEntryType::Deposit);
             assert_eq!(intent.available_delta, 25_000_000);
             assert_eq!(intent.locked_delta, 0);

@@ -1,5 +1,8 @@
 use chrono::Utc;
-use types::order::{OrderStatus, OrderType};
+use types::{
+    ledger_entries::{LedgerEntryType, LedgerIntent},
+    order::{OrderStatus, OrderType},
+};
 use uuid::Uuid;
 
 use crate::{
@@ -10,9 +13,10 @@ use crate::{
 
 pub fn cancel_order(
     state: &mut OrderEngineState,
+    command_id: Uuid,
     user_id: Uuid,
     order_id: String,
-) -> Result<(), ApplyError> {
+) -> Result<Vec<LedgerIntent>, ApplyError> {
     let order = state
         .orders
         .get(&order_id)
@@ -80,6 +84,20 @@ pub fn cancel_order(
     balance.available += unlock_amount;
     balance.updated_at = Utc::now();
 
+    let intent = LedgerIntent {
+        command_id,
+        sequence: 0,
+        user_id: order_user_id,
+        asset_id: unlock_asset_id,
+        entry_type: LedgerEntryType::Unlock,
+        available_delta: unlock_amount,
+        locked_delta: -unlock_amount,
+        available_after: balance.available,
+        locked_after: balance.locked,
+        reference_id: Some(command_id),
+        reference_type: Some("order".into()),
+    };
+
     let order = state
         .orders
         .get_mut(&order_id)
@@ -87,5 +105,5 @@ pub fn cancel_order(
     order.status = OrderStatus::Cancelled;
     order.cancelled_at = Some(Utc::now());
 
-    Ok(())
+    Ok(vec![intent])
 }

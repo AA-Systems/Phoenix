@@ -6,6 +6,7 @@ use crate::ledger_entries::LedgerEntryType;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LedgerIntent {
     pub command_id: Uuid,
+    pub sequence: i32,
     pub user_id: Uuid,
     pub asset_id: Uuid,
     pub entry_type: LedgerEntryType,

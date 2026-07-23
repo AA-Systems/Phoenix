@@ -1,5 +1,6 @@
 use chrono::Utc;
 use types::{
+    ledger_entries::{LedgerEntryType, LedgerIntent},
     markets::MarketStatus,
     order::{Order, OrderType},
     orderbook::{BookOrder, OrderBook},
@@ -14,12 +15,13 @@ use crate::{
 
 pub fn create_order(
     state: &mut OrderEngineState,
+    command_id: Uuid,
     user_id: Uuid,
     market_symbol: String,
     order_type: OrderType,
     price: i64,
     quantity: i64,
-) -> Result<(), ApplyError> {
+) -> Result<Vec<LedgerIntent>, ApplyError> {
     if price <= 0 {
         return Err(ApplyError::InvalidPrice);
     }
@@ -82,6 +84,21 @@ pub fn create_order(
     balance.locked += reserve_amount;
     balance.updated_at = Utc::now();
 
+    let mut intents = vec![LedgerIntent {
+        command_id,
+        sequence: 0,
+        user_id,
+        asset_id: reserve_asset_id,
+        entry_type: LedgerEntryType::Lock,
+        available_delta: -reserve_amount,
+        locked_delta: reserve_amount,
+        available_after: balance.available,
+        locked_after: balance.locked,
+        reference_id: Some(command_id),
+        reference_type: Some("order".into()),
+    }];
+    let mut next_sequence = 1;
+
     let order_id = state.next_order_id.to_string();
     let order = Order::new(
         order_id.clone(),
@@ -95,8 +112,10 @@ pub fn create_order(
     state.orders.insert(order_id.clone(), order);
     state.next_order_id += 1;
 
-    match_order(
+    let trade_intents = match_order(
         state,
+        command_id,
+        &mut next_sequence,
         &order_id,
         market_id,
         &market_symbol,
@@ -104,6 +123,7 @@ pub fn create_order(
         quote_asset_id,
         base_decimals,
     )?;
+    intents.extend(trade_intents);
 
     let remaining = state
         .orders
@@ -129,5 +149,5 @@ pub fn create_order(
         }
     }
 
-    Ok(())
+    Ok(intents)
 }

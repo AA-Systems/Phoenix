@@ -49,22 +49,26 @@ pub fn apply_command_effects(
 
     let intents = match command {
         Command::CreateOrder {
+            command_id,
             user_id,
             market_symbol,
             order_type,
             price,
             quantity,
-            ..
-        } => {
-            create_order(state, user_id, market_symbol, order_type, price, quantity)?;
-            Vec::new()
-        }
+        } => create_order(
+            state,
+            command_id,
+            user_id,
+            market_symbol,
+            order_type,
+            price,
+            quantity,
+        )?,
         Command::CancelOrder {
-            user_id, order_id, ..
-        } => {
-            cancel_order(state, user_id, order_id)?;
-            Vec::new()
-        }
+            command_id,
+            user_id,
+            order_id,
+        } => cancel_order(state, command_id, user_id, order_id)?,
         Command::CreditBalance {
             command_id,
             user_id,

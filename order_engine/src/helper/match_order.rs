@@ -1,6 +1,7 @@
 use chrono::Utc;
 use types::{
     balances::Balance,
+    ledger_entries::{LedgerEntryType, LedgerIntent},
     order::{OrderStatus, OrderType},
     trade::Trade,
 };
@@ -20,13 +21,17 @@ struct Fill {
 
 pub fn match_order(
     state: &mut OrderEngineState,
+    command_id: Uuid,
+    next_sequence: &mut i32,
     taker_order_id: &str,
     market_id: Uuid,
     market_symbol: &str,
     base_asset_id: Uuid,
     quote_asset_id: Uuid,
     base_decimals: i32,
-) -> Result<(), ApplyError> {
+) -> Result<Vec<LedgerIntent>, ApplyError> {
+    let mut intents = Vec::new();
+
     loop {
         let Some(fill) = take_next_fill(state, taker_order_id, market_symbol)? else {
             break;
@@ -51,8 +56,12 @@ pub fn match_order(
             }
         };
 
-        settle_fill(
+        let trade_id = Uuid::new_v4();
+        let fill_intents = settle_fill(
             state,
+            command_id,
+            next_sequence,
+            trade_id,
             buyer_user_id,
             seller_user_id,
             buyer_order_price,
@@ -62,12 +71,13 @@ pub fn match_order(
             quote_asset_id,
             base_decimals,
         )?;
+        intents.extend(fill_intents);
 
         apply_fill(state, &fill.maker_order_id, fill.fill_qty)?;
         apply_fill(state, taker_order_id, fill.fill_qty)?;
 
         state.trades.push(Trade {
-            id: Uuid::new_v4(),
+            id: trade_id,
             market_id,
             maker_order_id: fill.maker_order_id,
             taker_order_id: taker_order_id.to_string(),
@@ -79,7 +89,7 @@ pub fn match_order(
         });
     }
 
-    Ok(())
+    Ok(intents)
 }
 
 fn take_next_fill(
@@ -220,6 +230,9 @@ fn apply_fill(
 
 fn settle_fill(
     state: &mut OrderEngineState,
+    command_id: Uuid,
+    next_sequence: &mut i32,
+    trade_id: Uuid,
     buyer_user_id: Uuid,
     seller_user_id: Uuid,
     buyer_order_price: i64,
@@ -228,7 +241,7 @@ fn settle_fill(
     base_asset_id: Uuid,
     quote_asset_id: Uuid,
     base_decimals: i32,
-) -> Result<(), ApplyError> {
+) -> Result<Vec<LedgerIntent>, ApplyError> {
     let cost = quote_notional(trade_price, fill_qty, base_decimals)?;
     let buyer_reserved = quote_notional(buyer_order_price, fill_qty, base_decimals)?;
     if buyer_reserved < cost {
@@ -236,16 +249,91 @@ fn settle_fill(
     }
     let refund = buyer_reserved - cost;
 
+    let mut intents = Vec::new();
+
     debit_locked(state, buyer_user_id, quote_asset_id, buyer_reserved)?;
     if refund > 0 {
         credit_available(state, buyer_user_id, quote_asset_id, refund);
     }
+    intents.push(trade_intent(
+        state,
+        command_id,
+        next_sequence,
+        trade_id,
+        buyer_user_id,
+        quote_asset_id,
+        refund,
+        -buyer_reserved,
+    )?);
+
     credit_available(state, buyer_user_id, base_asset_id, fill_qty);
+    intents.push(trade_intent(
+        state,
+        command_id,
+        next_sequence,
+        trade_id,
+        buyer_user_id,
+        base_asset_id,
+        fill_qty,
+        0,
+    )?);
 
     debit_locked(state, seller_user_id, base_asset_id, fill_qty)?;
-    credit_available(state, seller_user_id, quote_asset_id, cost);
+    intents.push(trade_intent(
+        state,
+        command_id,
+        next_sequence,
+        trade_id,
+        seller_user_id,
+        base_asset_id,
+        0,
+        -fill_qty,
+    )?);
 
-    Ok(())
+    credit_available(state, seller_user_id, quote_asset_id, cost);
+    intents.push(trade_intent(
+        state,
+        command_id,
+        next_sequence,
+        trade_id,
+        seller_user_id,
+        quote_asset_id,
+        cost,
+        0,
+    )?);
+
+    Ok(intents)
+}
+
+fn trade_intent(
+    state: &OrderEngineState,
+    command_id: Uuid,
+    next_sequence: &mut i32,
+    trade_id: Uuid,
+    user_id: Uuid,
+    asset_id: Uuid,
+    available_delta: i64,
+    locked_delta: i64,
+) -> Result<LedgerIntent, ApplyError> {
+    let balance = state
+        .balances
+        .get(&(user_id, asset_id))
+        .ok_or(ApplyError::InsufficientBalance)?;
+    let sequence = *next_sequence;
+    *next_sequence += 1;
+    Ok(LedgerIntent {
+        command_id,
+        sequence,
+        user_id,
+        asset_id,
+        entry_type: LedgerEntryType::Trade,
+        available_delta,
+        locked_delta,
+        available_after: balance.available,
+        locked_after: balance.locked,
+        reference_id: Some(trade_id),
+        reference_type: Some("trade".into()),
+    })
 }
 
 fn debit_locked(

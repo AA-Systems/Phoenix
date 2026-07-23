@@ -8,7 +8,8 @@ INSERT INTO ledger_entries (
     locked_after,
     reference_id,
     reference_type,
-    command_id
+    command_id,
+    sequence
 ) VALUES (
     $1,
     $2,
@@ -19,9 +20,10 @@ INSERT INTO ledger_entries (
     $7,
     $8,
     $9,
-    $10
+    $10,
+    $11
 )
-ON CONFLICT (command_id) DO NOTHING
+ON CONFLICT (command_id, sequence) DO NOTHING
 RETURNING
     id,
     user_id,

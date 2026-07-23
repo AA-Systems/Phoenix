@@ -29,6 +29,7 @@ pub async fn persist_intents(pool: &PgPool, intents: &[LedgerIntent]) -> Result<
             .bind(intent.reference_id)
             .bind(intent.reference_type.as_deref())
             .bind(intent.command_id)
+            .bind(intent.sequence)
             .execute(&mut *transaction)
             .await?;
     }
