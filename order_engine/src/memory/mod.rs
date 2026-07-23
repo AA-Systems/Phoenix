@@ -6,6 +6,8 @@ use types::{
 };
 use uuid::Uuid;
 
+pub mod load_from_db;
+
 pub struct OrderEngineState {
     pub next_order_id: u64,
     pub orders: HashMap<String, Order>,
@@ -19,7 +21,6 @@ pub struct OrderEngineState {
 
 impl OrderEngineState {
     pub fn new() -> Self {
-        // TODO: load balances, open orders, books, markets, assets and last Kafka offset from snapshot
         Self {
             next_order_id: 1,
             orders: HashMap::new(),

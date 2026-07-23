@@ -1412,9 +1412,11 @@ name = "order_engine"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "db",
  "dotenv",
  "redis",
  "serde_json",
+ "sqlx",
  "tokio",
  "tracing",
  "tracing-subscriber",

@@ -1,10 +1,12 @@
+use std::time::Duration;
+
 use order_engine::helper::ensure_consumer_group::ensure_consumer_group;
 use order_engine::helper::handle_entry::handle_entry;
-use order_engine::memory::OrderEngineState;
+use order_engine::memory::load_from_db::load_from_db;
 use redis::aio::ConnectionManager;
 use redis::streams::{StreamReadOptions, StreamReadReply};
 use redis::{AsyncCommands, Client, RedisResult};
-use std::time::Duration;
+use sqlx::postgres::PgPoolOptions;
 use tracing::{error, info};
 
 #[tokio::main]
@@ -17,6 +19,7 @@ async fn main() {
         )
         .init();
 
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let redis_url =
         std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
     let stream = std::env::var("REDIS_ORDER_COMMANDS_STREAM")
@@ -28,6 +31,17 @@ async fn main() {
 
     info!(%redis_url, %stream, %group, %consumer, "starting order engine consumer");
 
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .acquire_timeout(Duration::from_secs(5))
+        .connect(&database_url)
+        .await
+        .expect("cannot connect to database");
+
+    let mut state = load_from_db(&pool)
+        .await
+        .expect("failed to load engine state from database");
+
     let client = Client::open(redis_url.as_str()).expect("invalid REDIS_URL");
     let mut conn = ConnectionManager::new(client)
         .await
@@ -35,7 +49,6 @@ async fn main() {
 
     ensure_consumer_group(&mut conn, &stream, &group).await;
 
-    let mut state = OrderEngineState::new();
     let read_opts = StreamReadOptions::default()
         .group(&group, &consumer)
         .count(1)

@@ -8,7 +8,6 @@ COPY db ./db
 COPY types ./types
 COPY order_engine ./order_engine
 RUN cargo build --release -p order_engine
-RUN cargo build --release -p order_engine
 
 # --- run ---
 FROM debian:bookworm-slim

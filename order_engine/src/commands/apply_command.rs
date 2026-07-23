@@ -29,22 +29,20 @@ pub fn apply_command(state: &mut OrderEngineState, command: Command) -> Result<(
         return Ok(());
     }
 
-    println!("{:?}", command);
+    match command {
+        Command::CreateOrder {
+            user_id,
+            market_symbol,
+            order_type,
+            price,
+            quantity,
+            ..
+        } => create_order(state, user_id, market_symbol, order_type, price, quantity)?,
+        Command::CancelOrder {
+            user_id, order_id, ..
+        } => cancel_order(state, user_id, order_id)?,
+    }
 
-    // match command {
-    //     Command::CreateOrder {
-    //         user_id,
-    //         market_symbol,
-    //         order_type,
-    //         price,
-    //         quantity,
-    //         ..
-    //     } => create_order(state, user_id, market_symbol, order_type, price, quantity)?,
-    //     Command::CancelOrder {
-    //         user_id, order_id, ..
-    //     } => cancel_order(state, user_id, order_id)?,
-    // }
-
-    // state.processed_commands.insert(command_id);
+    state.processed_commands.insert(command_id);
     Ok(())
 }
