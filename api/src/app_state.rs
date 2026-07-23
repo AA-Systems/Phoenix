@@ -1,5 +1,6 @@
 use axum::extract::FromRef;
 use axum_limit::{FixedWindowPolicy, LimitState, Quota};
+use redis::aio::ConnectionManager;
 use sqlx::PgPool;
 
 use crate::middlewares::rate_limit_key::ClientIpUri;
@@ -11,6 +12,8 @@ pub struct AppState {
     pub admin_api_token: String,
     pub token_service: TokenService,
     pub refresh_token_config: RefreshTokenConfig,
+    pub redis: ConnectionManager,
+    pub order_commands_stream: String,
     limits: LimitState<ClientIpUri, FixedWindowPolicy>,
     quotas: RateLimitQuotas,
 }
@@ -29,6 +32,8 @@ impl AppState {
         admin_api_token: String,
         token_service: TokenService,
         refresh_token_config: RefreshTokenConfig,
+        redis: ConnectionManager,
+        order_commands_stream: String,
         quotas: RateLimitQuotas,
     ) -> Self {
         Self {
@@ -36,6 +41,8 @@ impl AppState {
             admin_api_token,
             token_service,
             refresh_token_config,
+            redis,
+            order_commands_stream,
             limits: LimitState::default(),
             quotas,
         }

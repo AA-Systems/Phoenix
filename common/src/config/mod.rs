@@ -12,6 +12,8 @@ pub struct Config {
     pub access_token_ttl_seconds: u64,
     pub refresh_token_ttl_seconds: u64,
     pub cookie_secure: bool,
+    pub redis_url: String,
+    pub order_commands_stream: String,
 }
 
 impl Config {
@@ -39,6 +41,9 @@ impl Config {
                 .expect("cookie_secure must be set")
                 .parse::<bool>()
                 .expect("cookie_secure must be a bool"),
+            redis_url: env::var("REDIS_URL").expect("REDIS_URL must be set"),
+            order_commands_stream: env::var("REDIS_ORDER_COMMANDS_STREAM")
+                .unwrap_or_else(|_| "order-commands".to_string()),
         }
     }
 }

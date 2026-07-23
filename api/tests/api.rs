@@ -3,4 +3,5 @@ mod balances;
 mod common;
 mod health;
 mod markets;
+mod orders;
 mod users;

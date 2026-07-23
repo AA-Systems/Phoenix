@@ -27,6 +27,7 @@ sha2 = "0.10.9"
 hex = "0.4.3"
 axum-extra = { version = "0.12", features = ["cookie"] }
 time = "0.3.53"
+redis = { version = "0.32.5", features = ["tokio-comp", "connection-manager"] }
 axum-limit = "0.1.0"
 
 [dev-dependencies]

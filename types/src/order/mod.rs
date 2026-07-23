@@ -2,6 +2,11 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod cancel_order_request;
+pub mod cancel_order_response;
+pub mod create_order_request;
+pub mod create_order_response;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OrderType {
@@ -9,7 +14,8 @@ pub enum OrderType {
     Sell,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum OrderStatus {
     Active,
     PartiallyFilled,

@@ -10,6 +10,7 @@ use axum::http::{
 use axum_limit::Quota;
 use common::config::Config;
 use dotenv::dotenv;
+use redis::Client;
 use sqlx::postgres::PgPoolOptions;
 use std::{fs, time::Duration};
 use tower::ServiceBuilder;
@@ -36,7 +37,7 @@ async fn main() {
     let frontend_url = config.frontend_url;
     let origins = [frontend_url.parse().unwrap()];
     let cors_layer = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::PATCH])
+        .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
         .allow_headers([AUTHORIZATION, CONTENT_TYPE])
         .allow_credentials(true)
         .allow_origin(origins);
@@ -49,6 +50,11 @@ async fn main() {
         .connect(&database_url)
         .await
         .expect("Cannot connect to database");
+
+    let redis_client = Client::open(config.redis_url.as_str()).expect("invalid REDIS_URL");
+    let redis = redis::aio::ConnectionManager::new(redis_client)
+        .await
+        .expect("cannot connect to Redis");
 
     let private_key_pem =
         fs::read(&config.jwt_private_key_path).expect("cannot read JWT private key");
@@ -72,6 +78,8 @@ async fn main() {
         config.admin_api_token,
         token_service,
         refresh_token_config,
+        redis,
+        config.order_commands_stream,
         RateLimitQuotas {
             auth: Quota::per_minute(10),
             health: Quota::per_minute(5),

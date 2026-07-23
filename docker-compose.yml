@@ -39,6 +39,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem

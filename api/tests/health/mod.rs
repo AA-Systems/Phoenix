@@ -5,13 +5,14 @@ use api::{
 };
 use axum::http::{Request, StatusCode};
 use axum_limit::Quota;
+use redis::Client;
 use sqlx::postgres::PgPoolOptions;
 use std::{fs, path::Path};
 use tower::ServiceExt;
 
 use crate::common::{
     ADMIN_TOKEN, TEST_ACCESS_TOKEN_TTL_SECONDS, TEST_DATABASE_URL, TEST_JWT_AUDIENCE,
-    TEST_JWT_ISSUER, test_state,
+    TEST_JWT_ISSUER, TEST_ORDER_COMMANDS_STREAM, TEST_REDIS_URL, test_state,
 };
 
 #[tokio::test]
@@ -37,6 +38,11 @@ async fn health_endpoint_enforces_rate_limit() {
         .await
         .unwrap();
 
+    let redis_client = Client::open(TEST_REDIS_URL).unwrap();
+    let redis = redis::aio::ConnectionManager::new(redis_client)
+        .await
+        .unwrap();
+
     let repository_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
     let private_key_pem = fs::read(repository_root.join("secrets/jwt-private.pem")).unwrap();
     let public_key_pem = fs::read(repository_root.join("secrets/jwt-public.pem")).unwrap();
@@ -57,6 +63,8 @@ async fn health_endpoint_enforces_rate_limit() {
             refresh_token_ttl_seconds: 2592000,
             cookie_secure: false,
         },
+        redis,
+        TEST_ORDER_COMMANDS_STREAM.to_string(),
         RateLimitQuotas {
             auth: Quota::per_minute(10),
             health: Quota::per_minute(5),
