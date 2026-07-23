@@ -1,5 +1,10 @@
 import { clearSession, getSession, saveSession } from "@/lib/session";
-import type { AssetBalance, AuthResponse, Session } from "@/lib/types";
+import type {
+  AssetBalance,
+  AuthResponse,
+  LedgerEntry,
+  Session,
+} from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 let refreshPromise: Promise<Session> | null = null;
@@ -91,21 +96,29 @@ export async function restoreSession(): Promise<Session | null> {
   }
 }
 
-export async function getBalances(): Promise<AssetBalance[]> {
+async function authedPost<T>(path: string): Promise<T> {
   let session = await restoreSession();
-  if (!session) throw new ApiError(401, "Please log in to view balances.");
+  if (!session) throw new ApiError(401, "Please log in.");
 
   try {
-    return await request<AssetBalance[]>("/api/v1/balances/get", {
+    return await request<T>(path, {
       method: "POST",
       token: session.accessToken,
     });
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) throw error;
     session = await refreshSession();
-    return request<AssetBalance[]>("/api/v1/balances/get", {
+    return request<T>(path, {
       method: "POST",
       token: session.accessToken,
     });
   }
+}
+
+export function getBalances(): Promise<AssetBalance[]> {
+  return authedPost("/api/v1/balances/get");
+}
+
+export function getLedger(): Promise<LedgerEntry[]> {
+  return authedPost("/api/v1/balances/ledger");
 }

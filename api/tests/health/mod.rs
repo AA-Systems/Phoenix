@@ -11,8 +11,8 @@ use std::{fs, path::Path};
 use tower::ServiceExt;
 
 use crate::common::{
-    ADMIN_TOKEN, TEST_ACCESS_TOKEN_TTL_SECONDS, TEST_DATABASE_URL, TEST_JWT_AUDIENCE,
-    TEST_JWT_ISSUER, TEST_ORDER_COMMANDS_STREAM, TEST_REDIS_URL, test_state,
+    ADMIN_TOKEN, TEST_ACCESS_TOKEN_TTL_SECONDS, TEST_DATABASE_URL, TEST_ENGINE_COMMANDS_STREAM,
+    TEST_JWT_AUDIENCE, TEST_JWT_ISSUER, TEST_ORDER_COMMANDS_STREAM, TEST_REDIS_URL, test_state,
 };
 
 #[tokio::test]
@@ -65,6 +65,7 @@ async fn health_endpoint_enforces_rate_limit() {
         },
         redis,
         TEST_ORDER_COMMANDS_STREAM.to_string(),
+        TEST_ENGINE_COMMANDS_STREAM.to_string(),
         RateLimitQuotas {
             auth: Quota::per_minute(10),
             health: Quota::per_minute(5),

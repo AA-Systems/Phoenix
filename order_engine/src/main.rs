@@ -22,14 +22,23 @@ async fn main() {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let redis_url =
         std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
-    let stream = std::env::var("REDIS_ORDER_COMMANDS_STREAM")
+    let order_stream = std::env::var("REDIS_ORDER_COMMANDS_STREAM")
         .unwrap_or_else(|_| "order-commands".to_string());
+    let engine_stream = std::env::var("REDIS_ENGINE_COMMANDS_STREAM")
+        .unwrap_or_else(|_| "engine-commands".to_string());
     let group =
         std::env::var("REDIS_ORDER_ENGINE_GROUP").unwrap_or_else(|_| "order-engine".to_string());
     let consumer = std::env::var("REDIS_ORDER_ENGINE_CONSUMER")
         .unwrap_or_else(|_| "order-engine-1".to_string());
 
-    info!(%redis_url, %stream, %group, %consumer, "starting order engine consumer");
+    info!(
+        %redis_url,
+        %order_stream,
+        %engine_stream,
+        %group,
+        %consumer,
+        "starting order engine consumer"
+    );
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -47,25 +56,33 @@ async fn main() {
         .await
         .expect("failed to connect to Redis");
 
-    ensure_consumer_group(&mut conn, &stream, &group).await;
+    ensure_consumer_group(&mut conn, &order_stream, &group).await;
+    ensure_consumer_group(&mut conn, &engine_stream, &group).await;
 
     let read_opts = StreamReadOptions::default()
         .group(&group, &consumer)
         .count(1)
         .block(5000);
 
-    info!("consuming order commands from Redis stream");
+    info!("consuming order and engine commands from Redis streams");
 
     loop {
-        let reply: RedisResult<StreamReadReply> =
-            conn.xread_options(&[&stream], &[">"], &read_opts).await;
+        let reply: RedisResult<StreamReadReply> = conn
+            .xread_options(&[&order_stream, &engine_stream], &[">", ">"], &read_opts)
+            .await;
 
         match reply {
             Ok(reply) => {
                 for stream_key in reply.keys {
                     for entry in stream_key.ids {
                         handle_entry(
-                            &mut conn, &mut state, &stream, &group, &entry.id, &entry.map,
+                            &mut conn,
+                            &pool,
+                            &mut state,
+                            &stream_key.key,
+                            &group,
+                            &entry.id,
+                            &entry.map,
                         )
                         .await;
                     }

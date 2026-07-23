@@ -1,17 +1,12 @@
 import { ArrowDownToLine, ArrowUpFromLine, LockKeyhole } from "lucide-react";
 
+import { displayAmount } from "@/lib/balances";
 import type { AssetBalance } from "@/lib/types";
-
-function displayAmount(value: number, decimals: number) {
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: Math.min(decimals, 8),
-  }).format(value / 10 ** decimals);
-}
 
 export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
   if (balances.length === 0) {
     return (
-      <div className="rounded-[28px] border border-dashed border-[#3a3142] bg-[#141018] px-6 py-20 text-center">
+      <div className="rounded-[28px] border border-dashed border-[#3a3142] bg-[#141018]/80 px-6 py-20 text-center">
         <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#271a20] text-[#ff8175]">
           <ArrowDownToLine size={20} />
         </div>
@@ -27,25 +22,30 @@ export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-[28px] border border-[#302839] bg-[#141018]">
-      <div className="min-w-[720px]">
-        <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr_auto] border-b border-[#302839] bg-[#19141e] px-6 py-4 text-[10px] uppercase tracking-[0.16em] text-[#716878]">
+    <div className="overflow-x-auto rounded-[28px] border border-[#302839] bg-[#141018]/90 backdrop-blur-sm">
+      <div className="min-w-[760px]">
+        <div className="grid grid-cols-[1.5fr_1fr_1fr_1.15fr_auto] border-b border-[#302839] bg-[#19141e]/90 px-6 py-4 text-[10px] uppercase tracking-[0.16em] text-[#716878]">
           <span>Asset</span>
           <span className="text-right">Available</span>
           <span className="text-right">Locked</span>
-          <span className="text-right">Total</span>
+          <span className="text-right">Composition</span>
           <span className="w-28 text-right">Actions</span>
         </div>
 
-        {balances.map((balance) => {
+        {balances.map((balance, index) => {
           const total = balance.available + balance.locked;
+          const availablePct =
+            total > 0 ? (balance.available / total) * 100 : 100;
+          const lockedPct = total > 0 ? (balance.locked / total) * 100 : 0;
+
           return (
             <div
-              className="grid grid-cols-[1.4fr_1fr_1fr_1fr_auto] items-center border-[#292230] px-6 py-5 last:border-b-0 hover:bg-[#1b1621]"
+              className="page-reveal grid grid-cols-[1.5fr_1fr_1fr_1.15fr_auto] items-center border-b border-[#292230] px-6 py-5 last:border-b-0 hover:bg-[#1b1621]/80"
               key={balance.asset_id}
+              style={{ animationDelay: `${80 + index * 45}ms` }}
             >
               <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-full bg-[#271a20] font-mono text-xs font-semibold text-[#ff8175]">
+                <span className="grid size-10 place-items-center rounded-full bg-linear-to-br from-[#321f26] to-[#1a131c] font-mono text-xs font-semibold text-[#ff8175] ring-1 ring-[#3a2a32]">
                   {balance.symbol.slice(0, 2)}
                 </span>
                 <div>
@@ -61,15 +61,35 @@ export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
                 {displayAmount(balance.available, balance.decimals)}
               </p>
               <p className="flex items-center justify-end gap-2 font-mono text-sm text-[#928997]">
-                {balance.locked > 0 && <LockKeyhole size={13} />}
+                {balance.locked > 0 && (
+                  <LockKeyhole className="text-[#ff8175]" size={13} />
+                )}
                 {displayAmount(balance.locked, balance.decimals)}
               </p>
-              <p className="text-right font-mono text-sm font-medium text-white">
-                {displayAmount(total, balance.decimals)}
-              </p>
+              <div className="flex flex-col items-end gap-1.5">
+                <p className="font-mono text-sm font-medium text-white">
+                  {displayAmount(total, balance.decimals)}
+                </p>
+                <div className="flex h-1.5 w-28 overflow-hidden rounded-full bg-[#1d1722]">
+                  <span
+                    className="bar-grow h-full bg-[#74ddbd]"
+                    style={{
+                      width: `${availablePct}%`,
+                      animationDelay: `${120 + index * 45}ms`,
+                    }}
+                  />
+                  <span
+                    className="bar-grow h-full bg-[#ff6f61]"
+                    style={{
+                      width: `${lockedPct}%`,
+                      animationDelay: `${150 + index * 45}ms`,
+                    }}
+                  />
+                </div>
+              </div>
               <div className="flex w-28 justify-end gap-2">
                 <button
-                  className="grid size-8 place-items-center rounded-full border border-[#3a3142] text-[#aaa1ad] hover:border-[#ff6f61] hover:text-[#ff8175]"
+                  className="grid size-8 place-items-center rounded-full border border-[#3a3142] text-[#aaa1ad] transition hover:border-[#ff6f61] hover:text-[#ff8175]"
                   aria-label={`Deposit ${balance.symbol}`}
                 >
                   <ArrowDownToLine size={14} />

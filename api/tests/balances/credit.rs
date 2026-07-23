@@ -1,14 +1,14 @@
 use api::build_app;
 use axum::{body::to_bytes, http::StatusCode};
+use redis::AsyncCommands;
 use tower::ServiceExt;
 use types::auth::auth_response::AuthBody;
-use types::balances::AssetBalance;
 use types::balances::credit_balance_response::CreditBalanceBody;
-use types::ledger_entries::LedgerEntryType;
+use types::command::Command;
 
 use crate::common::{
-    credit_balance_req, insert_asset_req, test_state,
-    users::insert_user_req::{get_balances_req, register_user_req, unique_email},
+    TEST_ENGINE_COMMANDS_STREAM, TEST_REDIS_URL, credit_balance_req, insert_asset_req, test_state,
+    users::insert_user_req::{register_user_req, unique_email},
 };
 
 const VALID_PASSWORD: &str = "StrongPassword123!";
@@ -24,7 +24,7 @@ async fn credit_balance_requires_admin_token() {
 
 #[tokio::test]
 #[serial_test::serial]
-async fn credit_balance_then_list_balances() {
+async fn credit_balance_enqueues_command_on_redis_stream() {
     let app = build_app(test_state().await);
     let email = unique_email();
 
@@ -43,27 +43,42 @@ async fn credit_balance_then_list_balances() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let request = credit_balance_req(registered.user.id, "INR", 100_000_000, true);
-    let response = app.clone().oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::CREATED);
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::ACCEPTED);
 
     let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     let credited: CreditBalanceBody =
-        serde_json::from_slice(&bytes).expect("credit should return balance JSON");
-    assert_eq!(credited.balance.user_id, registered.user.id);
-    assert_eq!(credited.balance.available, 100_000_000);
-    assert_eq!(credited.balance.locked, 0);
-    assert_eq!(credited.ledger_entry.entry_type, LedgerEntryType::Deposit);
-    assert_eq!(credited.ledger_entry.available_delta, 100_000_000);
-    assert_eq!(credited.ledger_entry.available_after, 100_000_000);
+        serde_json::from_slice(&bytes).expect("credit should return JSON");
+    assert_eq!(credited.user_id, registered.user.id);
+    assert_eq!(credited.asset_symbol, "INR");
+    assert_eq!(credited.amount, 100_000_000);
 
-    let request = get_balances_req(Some(&registered.access_token));
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
+    let client = redis::Client::open(TEST_REDIS_URL).unwrap();
+    let mut conn = redis::aio::ConnectionManager::new(client).await.unwrap();
+    let entries: redis::streams::StreamRangeReply = conn
+        .xrange(TEST_ENGINE_COMMANDS_STREAM, "-", "+")
+        .await
+        .unwrap();
+    assert!(!entries.ids.is_empty());
 
-    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let balances: Vec<AssetBalance> =
-        serde_json::from_slice(&bytes).expect("balances should return JSON array");
-    assert_eq!(balances.len(), 1);
-    assert_eq!(balances[0].available, 100_000_000);
-    assert_eq!(balances[0].locked, 0);
+    let last = entries.ids.last().unwrap();
+    let payload = match last.map.get("payload").unwrap() {
+        redis::Value::BulkString(bytes) => String::from_utf8(bytes.clone()).unwrap(),
+        redis::Value::SimpleString(text) => text.clone(),
+        other => panic!("unexpected payload value: {other:?}"),
+    };
+    let command: Command = serde_json::from_str(&payload).unwrap();
+    match command {
+        Command::CreditBalance {
+            command_id,
+            user_id,
+            amount,
+            ..
+        } => {
+            assert_eq!(command_id, credited.command_id);
+            assert_eq!(user_id, registered.user.id);
+            assert_eq!(amount, 100_000_000);
+        }
+        other => panic!("expected CreditBalance, got {other:?}"),
+    }
 }

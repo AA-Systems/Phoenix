@@ -22,6 +22,25 @@ export type AssetBalance = {
   updated_at: string;
 };
 
+export type LedgerEntryType =
+  "deposit" | "withdrawal" | "lock" | "unlock" | "trade" | "fee" | "adjustment";
+
+export type LedgerEntry = {
+  id: string;
+  asset_id: string;
+  asset_symbol: string;
+  asset_decimals: number;
+  entry_type: LedgerEntryType;
+  available_delta: number;
+  locked_delta: number;
+  available_after: number;
+  locked_after: number;
+  reference_id: string | null;
+  reference_type: string | null;
+  command_id: string | null;
+  created_at: string;
+};
+
 export type Session = {
   user: User;
   accessToken: string;

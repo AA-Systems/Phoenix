@@ -33,6 +33,7 @@ pub async fn credit(
             .bind(balance.locked)
             .bind(None::<Uuid>)
             .bind(None::<String>)
+            .bind(None::<Uuid>)
             .fetch_one(&mut *transaction)
             .await?;
 

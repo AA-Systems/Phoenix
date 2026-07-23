@@ -22,6 +22,7 @@ pub const ADMIN_TOKEN: &str = "test-token";
 pub const TEST_DATABASE_URL: &str = "postgres://admin:supersecretpassword@localhost:5433/cex_test";
 pub const TEST_REDIS_URL: &str = "redis://localhost:6379";
 pub const TEST_ORDER_COMMANDS_STREAM: &str = "order-commands-test";
+pub const TEST_ENGINE_COMMANDS_STREAM: &str = "engine-commands-test";
 pub const TEST_JWT_ISSUER: &str = "centralized-exchange-test";
 pub const TEST_JWT_AUDIENCE: &str = "exchange-api-test";
 pub const TEST_ACCESS_TOKEN_TTL_SECONDS: u64 = 900;
@@ -48,6 +49,10 @@ pub async fn test_state_with_resource_quotas(market_quota: Quota, asset_quota: Q
 
     let _: Result<(), redis::RedisError> = redis::cmd("DEL")
         .arg(TEST_ORDER_COMMANDS_STREAM)
+        .query_async(&mut redis)
+        .await;
+    let _: Result<(), redis::RedisError> = redis::cmd("DEL")
+        .arg(TEST_ENGINE_COMMANDS_STREAM)
         .query_async(&mut redis)
         .await;
 
@@ -77,6 +82,7 @@ pub async fn test_state_with_resource_quotas(market_quota: Quota, asset_quota: Q
         refresh_token_config,
         redis,
         TEST_ORDER_COMMANDS_STREAM.to_string(),
+        TEST_ENGINE_COMMANDS_STREAM.to_string(),
         RateLimitQuotas {
             auth: Quota::per_second(10_000),
             health: Quota::per_second(10_000),

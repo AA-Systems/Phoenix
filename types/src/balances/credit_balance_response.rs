@@ -4,24 +4,26 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
-
-use crate::balances::Balance;
-use crate::ledger_entries::LedgerEntry;
+use uuid::Uuid;
 
 #[derive(Serialize)]
 pub struct CreditBalanceResponse {
     #[serde(skip)]
     status_code: StatusCode,
-    pub balance: Balance,
-    pub ledger_entry: LedgerEntry,
+    pub command_id: Uuid,
+    pub user_id: Uuid,
+    pub asset_symbol: String,
+    pub amount: i64,
 }
 
 impl CreditBalanceResponse {
-    pub fn created(balance: Balance, ledger_entry: LedgerEntry) -> Self {
+    pub fn accepted(command_id: Uuid, user_id: Uuid, asset_symbol: String, amount: i64) -> Self {
         Self {
-            status_code: StatusCode::CREATED,
-            balance,
-            ledger_entry,
+            status_code: StatusCode::ACCEPTED,
+            command_id,
+            user_id,
+            asset_symbol,
+            amount,
         }
     }
 }
@@ -35,6 +37,8 @@ impl IntoResponse for CreditBalanceResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct CreditBalanceBody {
-    pub balance: Balance,
-    pub ledger_entry: LedgerEntry,
+    pub command_id: Uuid,
+    pub user_id: Uuid,
+    pub asset_symbol: String,
+    pub amount: i64,
 }

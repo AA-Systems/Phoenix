@@ -14,6 +14,7 @@ pub struct Config {
     pub cookie_secure: bool,
     pub redis_url: String,
     pub order_commands_stream: String,
+    pub engine_commands_stream: String,
 }
 
 impl Config {
@@ -44,6 +45,8 @@ impl Config {
             redis_url: env::var("REDIS_URL").expect("REDIS_URL must be set"),
             order_commands_stream: env::var("REDIS_ORDER_COMMANDS_STREAM")
                 .unwrap_or_else(|_| "order-commands".to_string()),
+            engine_commands_stream: env::var("REDIS_ENGINE_COMMANDS_STREAM")
+                .unwrap_or_else(|_| "engine-commands".to_string()),
         }
     }
 }

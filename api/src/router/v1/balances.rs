@@ -4,6 +4,7 @@ use crate::{
     app_state::AppState,
     handlers::balances::{
         credit_balance::credit_balance, get_balance_by_user_id::get_balance_by_user_id,
+        list_ledger::list_ledger_entries,
     },
     middlewares::{admin_auth::admin_auth, jwt_middleware::jwt_middleware},
 };
@@ -11,6 +12,7 @@ use crate::{
 pub fn balances_router(app_state: AppState) -> Router<AppState> {
     let user_routes = Router::new()
         .route("/get", post(get_balance_by_user_id))
+        .route("/ledger", post(list_ledger_entries))
         .layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_middleware,

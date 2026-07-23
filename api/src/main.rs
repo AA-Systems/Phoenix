@@ -80,6 +80,7 @@ async fn main() {
         refresh_token_config,
         redis,
         config.order_commands_stream,
+        config.engine_commands_stream,
         RateLimitQuotas {
             auth: Quota::per_minute(10),
             health: Quota::per_minute(5),

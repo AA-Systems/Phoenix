@@ -8,6 +8,7 @@ use dotenv::dotenv;
 use rand_core::OsRng;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{PgPool, Row};
+use types::ledger_entries::{LedgerEntryType, LedgerIntent};
 use uuid::Uuid;
 
 const SEED_EMAIL: &str = "akshatarora130@gmail.com";
@@ -87,11 +88,17 @@ async fn main() {
     .await
     .expect("failed to seed SOL_INR");
 
-    // Generous demo balances (atomic units)
-    credit_balance(&pool, user_id, sol_id, 100_000_000_000).await; // 100 SOL
-    credit_balance(&pool, user_id, usdc_id, 1_000_000_000_000).await; // 1,000,000 USDC
-    credit_balance(&pool, user_id, usd_id, 100_000_00).await; // 100,000.00 USD
-    credit_balance(&pool, user_id, inr_id, 1_000_000_00).await; // ₹1,000,000.00
+    // Reset demo ledger so re-seed stays idempotent for UI testing.
+    clear_user_ledger(&pool, user_id).await;
+
+    // Generous demo balances + matching deposit ledger rows (atomic units)
+    seed_deposit(&pool, user_id, sol_id, 100_000_000_000).await; // 100 SOL
+    seed_deposit(&pool, user_id, usdc_id, 1_000_000_000_000).await; // 1,000,000 USDC
+    seed_deposit(&pool, user_id, usd_id, 100_000_00).await; // 100,000.00 USD
+    seed_deposit(&pool, user_id, inr_id, 1_000_000_00).await; // ₹1,000,000.00
+
+    // Sample lock so activity UI shows more than deposits (10 USDC locked).
+    seed_lock(&pool, user_id, usdc_id, 10_000_000).await;
 
     println!("seed complete");
     println!("  user_id:    {user_id}");
@@ -220,22 +227,68 @@ async fn upsert_market(
     Ok(row.get("id"))
 }
 
-async fn credit_balance(pool: &PgPool, user_id: Uuid, asset_id: Uuid, available: i64) {
-    sqlx::query(
+async fn clear_user_ledger(pool: &PgPool, user_id: Uuid) {
+    sqlx::query("DELETE FROM ledger_entries WHERE user_id = $1")
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("failed to clear seed ledger");
+}
+
+async fn seed_deposit(pool: &PgPool, user_id: Uuid, asset_id: Uuid, available: i64) {
+    let command_id = Uuid::new_v4();
+    let intent = LedgerIntent {
+        command_id,
+        user_id,
+        asset_id,
+        entry_type: LedgerEntryType::Deposit,
+        available_delta: available,
+        locked_delta: 0,
+        available_after: available,
+        locked_after: 0,
+        reference_id: Some(command_id),
+        reference_type: Some("seed".into()),
+    };
+    db::balances::persist_intents::persist_intents(pool, &[intent])
+        .await
+        .expect("failed to seed deposit");
+}
+
+async fn seed_lock(pool: &PgPool, user_id: Uuid, asset_id: Uuid, amount: i64) {
+    let row = sqlx::query(
         r#"
-        INSERT INTO balances (user_id, asset_id, available, locked, updated_at)
-        VALUES ($1, $2, $3, 0, NOW())
-        ON CONFLICT (user_id, asset_id) DO UPDATE
-        SET
-            available = EXCLUDED.available,
-            locked = 0,
-            updated_at = NOW()
+        SELECT available, locked
+        FROM balances
+        WHERE user_id = $1 AND asset_id = $2
         "#,
     )
     .bind(user_id)
     .bind(asset_id)
-    .bind(available)
-    .execute(pool)
+    .fetch_one(pool)
     .await
-    .expect("failed to seed balance");
+    .expect("balance must exist before seed lock");
+
+    let available: i64 = row.get("available");
+    let locked: i64 = row.get("locked");
+    assert!(
+        available >= amount,
+        "seed lock amount exceeds available balance"
+    );
+
+    let command_id = Uuid::new_v4();
+    let intent = LedgerIntent {
+        command_id,
+        user_id,
+        asset_id,
+        entry_type: LedgerEntryType::Lock,
+        available_delta: -amount,
+        locked_delta: amount,
+        available_after: available - amount,
+        locked_after: locked + amount,
+        reference_id: Some(command_id),
+        reference_type: Some("seed".into()),
+    };
+    db::balances::persist_intents::persist_intents(pool, &[intent])
+        .await
+        .expect("failed to seed lock");
 }

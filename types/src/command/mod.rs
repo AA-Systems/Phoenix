@@ -18,14 +18,20 @@ pub enum Command {
         user_id: Uuid,
         order_id: String,
     },
+    CreditBalance {
+        command_id: Uuid,
+        user_id: Uuid,
+        asset_id: Uuid,
+        amount: i64,
+    },
 }
 
 impl Command {
     pub fn command_id(&self) -> Uuid {
         match self {
-            Command::CreateOrder { command_id, .. } | Command::CancelOrder { command_id, .. } => {
-                *command_id
-            }
+            Command::CreateOrder { command_id, .. }
+            | Command::CancelOrder { command_id, .. }
+            | Command::CreditBalance { command_id, .. } => *command_id,
         }
     }
 }

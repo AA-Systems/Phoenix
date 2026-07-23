@@ -21,6 +21,7 @@ INSERT INTO ledger_entries (
     $9,
     $10
 )
+ON CONFLICT (command_id) DO NOTHING
 RETURNING
     id,
     user_id,

@@ -90,6 +90,24 @@ body {
   }
 }
 
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes ring-draw {
+  from {
+    stroke-dashoffset: 220;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .phoenix-flame {
   animation: phoenix-flame 2.8s ease-in-out infinite;
   transform-origin: 50% 80%;
@@ -119,6 +137,15 @@ body {
   animation: footer-glow 7s ease-in-out infinite;
 }
 
+.bar-grow {
+  transform-origin: left center;
+  animation: bar-grow 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ring-draw {
+  animation: ring-draw 900ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .phoenix-flame,
   .phoenix-ring,
@@ -126,7 +153,9 @@ body {
   .phoenix-ember,
   .phoenix-terminal,
   .page-reveal,
-  .phoenix-footer-glow {
+  .phoenix-footer-glow,
+  .bar-grow,
+  .ring-draw {
     animation: none;
   }
 }

@@ -1,28 +1,36 @@
 "use client";
 
-import { RefreshCw, Search, ShieldCheck, WalletCards } from "lucide-react";
+import { History, RefreshCw, Search, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { BalanceTable } from "@/components/balances/balance-table";
+import { LedgerActivity } from "@/components/balances/ledger-activity";
+import { PortfolioOverview } from "@/components/balances/portfolio-overview";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
-import { getBalances } from "@/lib/api";
+import { getBalances, getLedger } from "@/lib/api";
 import { getSession } from "@/lib/session";
-import type { AssetBalance } from "@/lib/types";
+import type { AssetBalance, LedgerEntry } from "@/lib/types";
 
 export default function BalancesPage() {
   const [balances, setBalances] = useState<AssetBalance[]>([]);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
 
-  async function loadBalances() {
+  async function loadPortfolio() {
     setLoading(true);
     setError("");
     try {
-      setBalances(await getBalances());
+      const [nextBalances, nextLedger] = await Promise.all([
+        getBalances(),
+        getLedger(),
+      ]);
+      setBalances(nextBalances);
+      setLedger(nextLedger);
     } catch (caught) {
       if (!getSession()) {
         router.replace("/login");
@@ -38,9 +46,12 @@ export default function BalancesPage() {
 
   useEffect(() => {
     let active = true;
-    getBalances()
-      .then((data) => {
-        if (active) setBalances(data);
+    Promise.all([getBalances(), getLedger()])
+      .then(([nextBalances, nextLedger]) => {
+        if (active) {
+          setBalances(nextBalances);
+          setLedger(nextLedger);
+        }
       })
       .catch((caught) => {
         if (active) {
@@ -74,91 +85,102 @@ export default function BalancesPage() {
     [balances, query],
   );
 
-  const lockedAssets = balances.filter((balance) => balance.locked > 0).length;
-
   return (
-    <div className="min-h-screen bg-[#0d0a10]">
+    <div className="relative min-h-screen overflow-hidden bg-[#0d0a10]">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(ellipse_at_top,_rgba(255,111,97,0.14),_transparent_55%),radial-gradient(ellipse_at_80%_0%,_rgba(116,221,189,0.08),_transparent_40%)]"
+      />
       <SiteHeader />
-      <main className="mx-auto max-w-[1380px] px-5 py-12 lg:px-8 lg:py-16">
-        <div className="flex flex-col justify-between gap-8 pb-10 md:flex-row md:items-end">
+      <main className="relative mx-auto max-w-[1380px] px-5 py-12 lg:px-8 lg:py-16">
+        <div className="page-reveal flex flex-col justify-between gap-8 pb-10 md:flex-row md:items-end">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff8175]">
+            <div className="mb-5 flex items-center gap-4 text-[10px] uppercase tracking-[0.24em] text-[#817787]">
+              <span className="h-px w-10 bg-[#ff6f61]" />
               Portfolio / Spot
-            </p>
-            <h1 className="mt-4 text-4xl font-semibold tracking-[-0.045em] text-[#fff8f5] sm:text-6xl">
-              Asset inventory
+            </div>
+            <h1 className="max-w-2xl text-4xl font-semibold leading-[0.95] tracking-[-0.05em] text-[#fff8f5] sm:text-6xl">
+              Your inventory,
+              <span className="text-[#ff6f61]"> in motion.</span>
             </h1>
-            <p className="mt-4 max-w-xl text-[#938a98]">
-              Native asset balances only. Available funds can trade; locked
-              funds are reserved by orders.
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#938a98]">
+              Spot balances with a live read on what&apos;s free to trade, what
+              orders have reserved, and the ledger behind every change.
             </p>
           </div>
-          <Button disabled={loading} onClick={loadBalances} tone="quiet">
+          <Button disabled={loading} onClick={loadPortfolio} tone="quiet">
             <RefreshCw className={loading ? "animate-spin" : ""} size={16} />
-            Refresh ledger
+            Refresh
           </Button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-3xl border border-[#302839] bg-[#141018] p-6">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#716878]">
-              Assets held
-            </p>
-            <p className="mt-3 font-mono text-2xl text-[#fff8f5]">
-              {balances.length.toString().padStart(2, "0")}
-            </p>
+        {error ? (
+          <div className="rounded-2xl border border-[#6e353f] bg-[#211318] px-5 py-4 text-sm text-[#ff9e96]">
+            {error}
           </div>
-          <div className="rounded-3xl border border-[#302839] bg-[#141018] p-6">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#716878]">
-              Assets locked
-            </p>
-            <p className="mt-3 font-mono text-2xl text-[#fff8f5]">
-              {lockedAssets.toString().padStart(2, "0")}
-            </p>
+        ) : loading ? (
+          <div className="grid min-h-80 place-items-center rounded-[28px] border border-[#302839] bg-[#141018]/70">
+            <RefreshCw className="animate-spin text-[#ff8175]" size={22} />
           </div>
-          <div className="rounded-3xl border border-[#302839] bg-[#141018] p-6">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[#716878]">
-              Ledger status
-            </p>
-            <p className="mt-3 flex items-center gap-2 text-sm text-[#74ddbd]">
-              <ShieldCheck size={16} /> Reconciled
-            </p>
-          </div>
-        </div>
+        ) : (
+          <>
+            <section className="page-reveal" style={{ animationDelay: "80ms" }}>
+              <PortfolioOverview balances={balances} ledger={ledger} />
+            </section>
 
-        <section className="mt-12">
-          <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-[#271a20]">
-                <WalletCards className="text-[#ff8175]" size={17} />
-              </span>
-              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#e6dfe7]">
-                Spot balances
-              </h2>
-            </div>
-            <label className="flex h-10 items-center gap-2 rounded-full border border-[#342d3b] bg-[#15111a] px-4 text-[#716878] focus-within:border-[#ff6f61]">
-              <Search size={15} />
-              <input
-                className="w-48 bg-transparent text-sm text-[#fff8f5] outline-none placeholder:text-[#5f5665]"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Filter assets"
-                value={query}
-              />
-            </label>
-          </div>
+            <section
+              className="page-reveal mt-12"
+              style={{ animationDelay: "140ms" }}
+            >
+              <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 place-items-center rounded-xl bg-[#271a20]">
+                    <WalletCards className="text-[#ff8175]" size={17} />
+                  </span>
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#e6dfe7]">
+                      Spot balances
+                    </h2>
+                    <p className="mt-1 text-xs text-[#716878]">
+                      {filtered.length} asset
+                      {filtered.length === 1 ? "" : "s"} in view
+                    </p>
+                  </div>
+                </div>
+                <label className="flex h-10 items-center gap-2 rounded-full border border-[#342d3b] bg-[#15111a]/90 px-4 text-[#716878] focus-within:border-[#ff6f61]">
+                  <Search size={15} />
+                  <input
+                    className="w-48 bg-transparent text-sm text-[#fff8f5] outline-none placeholder:text-[#5f5665]"
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Filter assets"
+                    value={query}
+                  />
+                </label>
+              </div>
+              <BalanceTable balances={filtered} />
+            </section>
 
-          {error ? (
-            <div className="rounded-2xl border border-[#6e353f] bg-[#211318] px-5 py-4 text-sm text-[#ff9e96]">
-              {error}
-            </div>
-          ) : loading ? (
-            <div className="grid min-h-72 place-items-center rounded-[28px] border border-[#302839] bg-[#141018]">
-              <RefreshCw className="animate-spin text-[#ff8175]" size={22} />
-            </div>
-          ) : (
-            <BalanceTable balances={filtered} />
-          )}
-        </section>
+            <section
+              className="page-reveal mt-14"
+              style={{ animationDelay: "200ms" }}
+            >
+              <div className="mb-4 flex items-center gap-3">
+                <span className="grid size-9 place-items-center rounded-xl bg-[#271a20]">
+                  <History className="text-[#ff8175]" size={17} />
+                </span>
+                <div>
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#e6dfe7]">
+                    Recent activity
+                  </h2>
+                  <p className="mt-1 text-xs text-[#716878]">
+                    Append-only ledger of balance changes
+                  </p>
+                </div>
+              </div>
+              <LedgerActivity entries={ledger} />
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

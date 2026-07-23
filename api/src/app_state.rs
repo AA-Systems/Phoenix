@@ -14,6 +14,7 @@ pub struct AppState {
     pub refresh_token_config: RefreshTokenConfig,
     pub redis: ConnectionManager,
     pub order_commands_stream: String,
+    pub engine_commands_stream: String,
     limits: LimitState<ClientIpUri, FixedWindowPolicy>,
     quotas: RateLimitQuotas,
 }
@@ -34,6 +35,7 @@ impl AppState {
         refresh_token_config: RefreshTokenConfig,
         redis: ConnectionManager,
         order_commands_stream: String,
+        engine_commands_stream: String,
         quotas: RateLimitQuotas,
     ) -> Self {
         Self {
@@ -43,6 +45,7 @@ impl AppState {
             refresh_token_config,
             redis,
             order_commands_stream,
+            engine_commands_stream,
             limits: LimitState::default(),
             quotas,
         }
