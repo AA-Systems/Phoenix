@@ -8,6 +8,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
+import { HeroActions } from "@/components/hero-actions";
 import { MarketBoard } from "@/components/market-board";
 import { PhoenixCore } from "@/components/phoenix-core";
 import { SiteFooter } from "@/components/site-footer";
@@ -63,18 +64,7 @@ export default function Home() {
                 A spot exchange where every balance has a history, every session
                 has a boundary, and the market stays in focus.
               </p>
-              <div className="mt-10 flex flex-wrap gap-3">
-                <Link href="/signup">
-                  <Button className="h-12 px-6">
-                    Create your ledger <ArrowRight size={17} />
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button className="h-12 px-6" tone="quiet">
-                    Log in
-                  </Button>
-                </Link>
-              </div>
+              <HeroActions />
               <div className="mt-16 grid max-w-xl grid-cols-2 border-y border-[#2c2533] text-xs">
                 <span className="flex items-center gap-3 border-r border-[#2c2533] py-4 pr-4 text-[#8d8492]">
                   <ShieldCheck className="text-[#74ddbd]" size={15} />
@@ -96,7 +86,7 @@ export default function Home() {
                 </div>
                 <MarketBoard />
                 <div className="mt-5 flex justify-between border-l border-[#ff6f61] pl-4 font-mono text-[10px] uppercase tracking-[0.14em] text-[#716878]">
-                  <span>Illustrative market data</span>
+                  <span>Live market catalog</span>
                   <span>UTC +00:00</span>
                 </div>
               </div>

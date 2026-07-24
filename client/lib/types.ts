@@ -46,3 +46,19 @@ export type Session = {
   accessToken: string;
   expiresAt: number;
 };
+
+export type MarketStatus = "trading" | "halted" | "archived";
+
+export type Market = {
+  id: string;
+  symbol: string;
+  name: string;
+  base_asset_id: string;
+  quote_asset_id: string;
+  status: MarketStatus;
+  price_tick_size: number;
+  quantity_step_size: number;
+  min_order_quantity: number;
+  min_order_notional: number;
+  created_at: string;
+};

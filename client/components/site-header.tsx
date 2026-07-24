@@ -43,7 +43,7 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-1 rounded-full bg-[#17131d] p-1 text-sm text-[#aaa1ad] md:flex">
           <Link
             className="rounded-full px-4 py-2 hover:bg-[#241d2b] hover:text-white"
-            href="/#markets"
+            href="/markets"
           >
             Markets
           </Link>
@@ -91,7 +91,7 @@ export function SiteHeader() {
       {open && (
         <div className="mx-auto mt-2 max-w-[1380px] rounded-2xl border border-[#2c2533] bg-[#15111a] p-5 shadow-2xl md:hidden">
           <div className="flex flex-col gap-4 text-sm text-[#ded6df]">
-            <Link href="/#markets" onClick={() => setOpen(false)}>
+            <Link href="/markets" onClick={() => setOpen(false)}>
               Markets
             </Link>
             <Link href="/balances" onClick={() => setOpen(false)}>

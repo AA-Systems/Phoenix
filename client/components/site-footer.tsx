@@ -2,7 +2,7 @@ import { ArrowUpRight, Flame } from "lucide-react";
 import Link from "next/link";
 
 const footerLinks = [
-  { label: "Markets", href: "/#markets" },
+  { label: "Markets", href: "/markets" },
   { label: "Balances", href: "/balances" },
   { label: "Log in", href: "/login" },
   { label: "Open account", href: "/signup" },

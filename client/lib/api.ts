@@ -3,6 +3,7 @@ import type {
   AssetBalance,
   AuthResponse,
   LedgerEntry,
+  Market,
   Session,
 } from "@/lib/types";
 
@@ -121,4 +122,12 @@ export function getBalances(): Promise<AssetBalance[]> {
 
 export function getLedger(): Promise<LedgerEntry[]> {
   return authedPost("/api/v1/balances/ledger");
+}
+
+export function listMarkets(limit = 50, skip = 0): Promise<Market[]> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    skip: String(skip),
+  });
+  return request<Market[]>(`/api/v1/markets?${params}`);
 }
