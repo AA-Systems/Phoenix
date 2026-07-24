@@ -65,6 +65,25 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  ws_server:
+    build:
+      context: .
+      dockerfile: ws_server/Dockerfile
+    container_name: ws_server_cex
+    env_file:
+      - .env
+    ports:
+      - "3002:3002"
+    environment:
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt/jwt-public.pem
+    volumes:
+      - ./secrets:/run/secrets/jwt:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   client:
     build:
       context: ./client

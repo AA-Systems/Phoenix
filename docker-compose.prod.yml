@@ -24,6 +24,19 @@ services:
       - .env
     restart: unless-stopped
 
+  ws_server:
+    build:
+      context: .
+      dockerfile: ws_server/Dockerfile
+    container_name: ws_server_cex
+    env_file:
+      - .env
+    volumes:
+      - /etc/centralized-exchange/secrets:/run/secrets/jwt:ro
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+
   client:
     build:
       context: ./client

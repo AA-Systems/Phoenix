@@ -8,12 +8,12 @@ COPY db ./db
 COPY types ./types
 COPY order_engine ./order_engine
 COPY ws_server ./ws_server
-RUN cargo build --release -p api
+RUN cargo build --release -p ws_server
 
 # --- run ---
 FROM debian:bookworm-slim
 WORKDIR /cex
 
-COPY --from=builder /cex/target/release/api /cex/api
-EXPOSE 3000
-CMD ["/cex/api"]
+COPY --from=builder /cex/target/release/ws_server /cex/ws_server
+EXPOSE 3002
+CMD ["/cex/ws_server"]
