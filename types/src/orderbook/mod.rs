@@ -51,3 +51,19 @@ pub struct OrderBookDepth {
     /// Lowest ask first.
     pub asks: Vec<PriceLevel>,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BookSide {
+    Bid,
+    Ask,
+}
+
+/// Incremental book update. `quantity == 0` means the level was removed.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookLevelDelta {
+    pub side: BookSide,
+    pub price: i64,
+    pub quantity: i64,
+    pub order_count: u32,
+}

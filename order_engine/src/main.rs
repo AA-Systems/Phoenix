@@ -32,6 +32,8 @@ async fn main() {
         .unwrap_or_else(|_| "engine-commands".to_string());
     let query_stream = std::env::var("REDIS_ENGINE_QUERIES_STREAM")
         .unwrap_or_else(|_| "engine-queries".to_string());
+    let events_stream = std::env::var("REDIS_EXCHANGE_EVENTS_STREAM")
+        .unwrap_or_else(|_| "exchange-events".to_string());
     let group =
         std::env::var("REDIS_ORDER_ENGINE_GROUP").unwrap_or_else(|_| "order-engine".to_string());
     let consumer = std::env::var("REDIS_ORDER_ENGINE_CONSUMER")
@@ -46,6 +48,7 @@ async fn main() {
         %order_stream,
         %engine_stream,
         %query_stream,
+        %events_stream,
         %group,
         %consumer,
         "starting order engine"
@@ -92,6 +95,7 @@ async fn main() {
             engine_stream_cmd,
             group_cmd,
             consumer_cmd,
+            events_stream,
         )
         .await;
     });
@@ -112,6 +116,7 @@ async fn run_command_loop(
     engine_stream: String,
     group: String,
     consumer: String,
+    events_stream: String,
 ) {
     let read_opts = StreamReadOptions::default()
         .group(&group, &consumer)
@@ -136,6 +141,7 @@ async fn run_command_loop(
                             &group,
                             &entry.id,
                             &entry.map,
+                            &events_stream,
                         )
                         .await;
                     }
