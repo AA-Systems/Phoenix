@@ -65,7 +65,7 @@ export function MarketBoard() {
           return (
             <Link
               className="grid grid-cols-[1fr_auto] items-center border-t border-[#292230] px-6 py-5 transition-colors hover:bg-[#1b1621]"
-              href="/markets"
+              href={`/trade/${encodeURIComponent(market.symbol)}`}
               key={market.id}
             >
               <div className="flex items-center gap-3">

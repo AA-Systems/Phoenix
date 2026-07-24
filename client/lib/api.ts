@@ -1,9 +1,15 @@
 import { clearSession, getSession, saveSession } from "@/lib/session";
 import type {
+  Asset,
   AssetBalance,
   AuthResponse,
+  CancelOrderResponse,
+  CreateOrderResponse,
   LedgerEntry,
   Market,
+  OpenOrder,
+  OrderBookDepth,
+  OrderType,
   Session,
 } from "@/lib/types";
 
@@ -97,20 +103,23 @@ export async function restoreSession(): Promise<Session | null> {
   }
 }
 
-async function authedPost<T>(path: string): Promise<T> {
+async function authedPost<T>(path: string, body?: unknown): Promise<T> {
   let session = await restoreSession();
   if (!session) throw new ApiError(401, "Please log in.");
 
+  const options: RequestOptions = {
+    method: "POST",
+    token: session.accessToken,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  };
+
   try {
-    return await request<T>(path, {
-      method: "POST",
-      token: session.accessToken,
-    });
+    return await request<T>(path, options);
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) throw error;
     session = await refreshSession();
     return request<T>(path, {
-      method: "POST",
+      ...options,
       token: session.accessToken,
     });
   }
@@ -124,10 +133,47 @@ export function getLedger(): Promise<LedgerEntry[]> {
   return authedPost("/api/v1/balances/ledger");
 }
 
+export function demoCredit(assetSymbol?: string): Promise<{
+  credits: { command_id: string; asset_symbol: string; amount: number }[];
+}> {
+  return authedPost(
+    "/api/v1/balances/demo-credit",
+    assetSymbol ? { asset_symbol: assetSymbol } : {},
+  );
+}
+
 export function listMarkets(limit = 50, skip = 0): Promise<Market[]> {
   const params = new URLSearchParams({
     limit: String(limit),
     skip: String(skip),
   });
   return request<Market[]>(`/api/v1/markets?${params}`);
+}
+
+export function listAssets(): Promise<Asset[]> {
+  return request<Asset[]>("/api/v1/assets");
+}
+
+export function getOrderBook(marketSymbol: string): Promise<OrderBookDepth> {
+  return request<OrderBookDepth>("/api/v1/markets/book", {
+    method: "POST",
+    body: JSON.stringify({ market_symbol: marketSymbol }),
+  });
+}
+
+export function listOpenOrders(): Promise<OpenOrder[]> {
+  return authedPost("/api/v1/orders/open");
+}
+
+export function createOrder(input: {
+  market_symbol: string;
+  order_type: OrderType;
+  price: number;
+  quantity: number;
+}): Promise<CreateOrderResponse> {
+  return authedPost("/api/v1/orders/create", input);
+}
+
+export function cancelOrder(orderId: string): Promise<CancelOrderResponse> {
+  return authedPost("/api/v1/orders/cancel", { order_id: orderId });
 }

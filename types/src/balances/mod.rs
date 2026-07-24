@@ -3,6 +3,7 @@ use sqlx::prelude::FromRow;
 
 pub mod credit_balance_request;
 pub mod credit_balance_response;
+pub mod demo_credit;
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Balance {

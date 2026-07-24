@@ -1,15 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { assetIconSrc, marketInitials } from "@/lib/markets";
+import { assetIconCandidates, marketInitials } from "@/lib/markets";
 
 function SingleIcon({ symbol, size = 40 }: { symbol: string; size?: number }) {
-  const src = assetIconSrc(symbol);
-  const [failed, setFailed] = useState(false);
+  const candidates = useMemo(() => assetIconCandidates(symbol), [symbol]);
+  const [index, setIndex] = useState(0);
+  const src = candidates[index];
 
-  if (!src || failed) {
+  if (!src) {
     return (
       <span
         className="grid place-items-center rounded-full bg-linear-to-br from-[#321f26] to-[#1a131c] font-mono text-xs font-semibold text-[#ff8175] ring-1 ring-[#3a2a32]"
@@ -25,7 +26,13 @@ function SingleIcon({ symbol, size = 40 }: { symbol: string; size?: number }) {
       alt={symbol}
       className="rounded-full bg-[#1a131c] ring-1 ring-[#3a2a32]"
       height={size}
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (index + 1 < candidates.length) {
+          setIndex((current) => current + 1);
+        } else {
+          setIndex(candidates.length);
+        }
+      }}
       src={src}
       width={size}
     />

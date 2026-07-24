@@ -1,4 +1,5 @@
-import { CandlestickChart } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, CandlestickChart } from "lucide-react";
 
 import { MarketPairIcons } from "@/components/markets/asset-icon";
 import { formatMarketPair, splitMarketSymbol } from "@/lib/markets";
@@ -77,9 +78,13 @@ export function MarketsTable({ markets }: { markets: Market[] }) {
 
               <div className="flex w-24 justify-end">
                 {market.status === "trading" ? (
-                  <span className="px-3 py-1.5 text-xs text-[#57505e]">
-                    Trade · soon
-                  </span>
+                  <Link
+                    className="inline-flex items-center gap-1 rounded-full border border-[#3a3142] bg-[#1a151f] px-3 py-1.5 text-xs text-[#e6dfe7] transition-colors hover:border-[#ff6f61] hover:text-[#fff8f5]"
+                    href={`/trade/${encodeURIComponent(market.symbol)}`}
+                  >
+                    Trade
+                    <ArrowUpRight size={13} />
+                  </Link>
                 ) : (
                   <span className="px-3 py-1.5 text-xs text-[#57505e]">—</span>
                 )}

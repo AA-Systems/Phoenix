@@ -1,9 +1,18 @@
 import { ArrowDownToLine, ArrowUpFromLine, LockKeyhole } from "lucide-react";
 
+import { AssetIcon } from "@/components/markets/asset-icon";
 import { displayAmount } from "@/lib/balances";
 import type { AssetBalance } from "@/lib/types";
 
-export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
+export function BalanceTable({
+  balances,
+  onDemoCredit,
+  crediting = false,
+}: {
+  balances: AssetBalance[];
+  onDemoCredit?: (symbol: string) => void;
+  crediting?: boolean;
+}) {
   if (balances.length === 0) {
     return (
       <div className="rounded-[28px] border border-dashed border-[#3a3142] bg-[#141018]/80 px-6 py-20 text-center">
@@ -14,8 +23,8 @@ export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
           Your ledger is empty
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#817884]">
-          Assets will appear here after an admin demo credit or a supported
-          deposit.
+          Use <span className="text-[#ff8175]">Get test funds</span> above to
+          credit a demo faucet pack, then start trading.
         </p>
       </div>
     );
@@ -45,9 +54,7 @@ export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
               style={{ animationDelay: `${80 + index * 45}ms` }}
             >
               <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-full bg-linear-to-br from-[#321f26] to-[#1a131c] font-mono text-xs font-semibold text-[#ff8175] ring-1 ring-[#3a2a32]">
-                  {balance.symbol.slice(0, 2)}
-                </span>
+                <AssetIcon size={40} symbol={balance.symbol} />
                 <div>
                   <p className="text-sm font-semibold text-[#fff8f5]">
                     {balance.symbol}
@@ -89,8 +96,11 @@ export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
               </div>
               <div className="flex w-28 justify-end gap-2">
                 <button
-                  className="grid size-8 place-items-center rounded-full border border-[#3a3142] text-[#aaa1ad] transition hover:border-[#ff6f61] hover:text-[#ff8175]"
-                  aria-label={`Deposit ${balance.symbol}`}
+                  className="grid size-8 place-items-center rounded-full border border-[#3a3142] text-[#aaa1ad] transition hover:border-[#ff6f61] hover:text-[#ff8175] disabled:opacity-50"
+                  aria-label={`Credit demo ${balance.symbol}`}
+                  disabled={crediting || !onDemoCredit}
+                  onClick={() => onDemoCredit?.(balance.symbol)}
+                  type="button"
                 >
                   <ArrowDownToLine size={14} />
                 </button>
@@ -98,6 +108,7 @@ export function BalanceTable({ balances }: { balances: AssetBalance[] }) {
                   className="grid size-8 cursor-not-allowed place-items-center rounded-full border border-[#2d2734] text-[#514957]"
                   aria-label={`Withdraw ${balance.symbol}`}
                   disabled
+                  type="button"
                 >
                   <ArrowUpFromLine size={14} />
                 </button>

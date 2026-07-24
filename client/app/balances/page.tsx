@@ -1,6 +1,12 @@
 "use client";
 
-import { History, RefreshCw, Search, WalletCards } from "lucide-react";
+import {
+  ArrowDownToLine,
+  History,
+  RefreshCw,
+  Search,
+  WalletCards,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -9,7 +15,7 @@ import { LedgerActivity } from "@/components/balances/ledger-activity";
 import { PortfolioOverview } from "@/components/balances/portfolio-overview";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
-import { getBalances, getLedger } from "@/lib/api";
+import { demoCredit, getBalances, getLedger } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { AssetBalance, LedgerEntry } from "@/lib/types";
 
@@ -18,7 +24,9 @@ export default function BalancesPage() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [crediting, setCrediting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const router = useRouter();
 
   async function loadPortfolio() {
@@ -41,6 +49,31 @@ export default function BalancesPage() {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function getTestFunds(assetSymbol?: string) {
+    setCrediting(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await demoCredit(assetSymbol);
+      setNotice(
+        assetSymbol
+          ? `Credited demo ${assetSymbol}. Refresh in a moment.`
+          : `Credited ${result.credits.length} assets. Refresh in a moment.`,
+      );
+      window.setTimeout(() => {
+        void loadPortfolio();
+      }, 1200);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to credit demo funds.",
+      );
+    } finally {
+      setCrediting(false);
     }
   }
 
@@ -108,11 +141,26 @@ export default function BalancesPage() {
               orders have reserved, and the ledger behind every change.
             </p>
           </div>
-          <Button disabled={loading} onClick={loadPortfolio} tone="quiet">
-            <RefreshCw className={loading ? "animate-spin" : ""} size={16} />
-            Refresh
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={loading || crediting}
+              onClick={() => void getTestFunds()}
+            >
+              <ArrowDownToLine size={16} />
+              {crediting ? "Crediting…" : "Get test funds"}
+            </Button>
+            <Button disabled={loading} onClick={loadPortfolio} tone="quiet">
+              <RefreshCw className={loading ? "animate-spin" : ""} size={16} />
+              Refresh
+            </Button>
+          </div>
         </div>
+
+        {notice ? (
+          <div className="mb-4 rounded-2xl border border-[#2a5a4c] bg-[#13211e] px-5 py-4 text-sm text-[#74ddbd]">
+            {notice}
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded-2xl border border-[#6e353f] bg-[#211318] px-5 py-4 text-sm text-[#ff9e96]">
@@ -157,7 +205,11 @@ export default function BalancesPage() {
                   />
                 </label>
               </div>
-              <BalanceTable balances={filtered} />
+              <BalanceTable
+                balances={filtered}
+                crediting={crediting}
+                onDemoCredit={(symbol) => void getTestFunds(symbol)}
+              />
             </section>
 
             <section

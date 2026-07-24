@@ -49,6 +49,17 @@ export type Session = {
 
 export type MarketStatus = "trading" | "halted" | "archived";
 
+export type AssetStatus = "active" | "archived";
+
+export type Asset = {
+  id: string;
+  symbol: string;
+  name: string;
+  decimals: number;
+  status: AssetStatus;
+  created_at: string;
+};
+
 export type Market = {
   id: string;
   symbol: string;
@@ -62,3 +73,86 @@ export type Market = {
   min_order_notional: number;
   created_at: string;
 };
+
+export type OrderType = "buy" | "sell";
+export type OrderStatus =
+  "active" | "partially_filled" | "filled" | "cancelled" | "rejected";
+
+export type PriceLevel = {
+  price: number;
+  quantity: number;
+  order_count: number;
+};
+
+export type OrderBookDepth = {
+  market_symbol: string;
+  bids: PriceLevel[];
+  asks: PriceLevel[];
+};
+
+export type OrderBookLevelDelta = {
+  side: "bid" | "ask";
+  price: number;
+  quantity: number;
+  order_count: number;
+};
+
+export type OpenOrder = {
+  id: string;
+  user_id: string;
+  market_symbol: string;
+  order_type: OrderType;
+  price: number;
+  quantity: number;
+  filled_quantity: number;
+  remaining: number;
+  status: OrderStatus;
+  created_at: string;
+};
+
+export type TradeView = {
+  id: string;
+  market_id: string;
+  market_symbol: string;
+  maker_order_id: string;
+  taker_order_id: string;
+  price: number;
+  quantity: number;
+  buyer_user_id: string;
+  seller_user_id: string;
+  created_at: string;
+};
+
+export type CreateOrderResponse = {
+  command_id: string;
+  market_symbol: string;
+  order_type: OrderType;
+  price: number;
+  quantity: number;
+};
+
+export type CancelOrderResponse = {
+  command_id: string;
+  order_id: string;
+};
+
+export type ExchangeEvent =
+  | {
+      type: "balance_updated";
+      user_id: string;
+      balances: AssetBalance[];
+    }
+  | {
+      type: "order_book_updated";
+      market_symbol: string;
+      updates: OrderBookLevelDelta[];
+    }
+  | {
+      type: "open_orders_updated";
+      user_id: string;
+      orders: OpenOrder[];
+    }
+  | {
+      type: "trade_executed";
+      trade: TradeView;
+    };

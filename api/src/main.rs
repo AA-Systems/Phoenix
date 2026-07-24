@@ -86,9 +86,9 @@ async fn main() {
         RateLimitQuotas {
             auth: Quota::per_minute(10),
             health: Quota::per_minute(5),
-            market: Quota::per_minute(5),
-            asset: Quota::per_minute(5),
-            order: Quota::per_minute(30),
+            market: Quota::per_minute(100),
+            asset: Quota::per_minute(100),
+            order: Quota::per_minute(100),
         },
     );
 

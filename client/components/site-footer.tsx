@@ -1,12 +1,12 @@
+"use client";
+
 import { ArrowUpRight, Flame } from "lucide-react";
 import Link from "next/link";
 
-const footerLinks = [
-  { label: "Markets", href: "/markets" },
-  { label: "Balances", href: "/balances" },
-  { label: "Log in", href: "/login" },
-  { label: "Open account", href: "/signup" },
-];
+import { TradeNavLink } from "@/components/trade-nav-link";
+
+const footerClass =
+  "group flex min-h-24 flex-col justify-between border-b border-[#302839] p-4 text-sm text-[#a198a5] transition-colors hover:bg-[#141018] hover:text-[#fff8f5] sm:border-b-0 sm:border-l";
 
 export function SiteFooter() {
   return (
@@ -34,26 +34,22 @@ export function SiteFooter() {
 
         <nav
           aria-label="Footer navigation"
-          className="grid w-full max-w-xl grid-cols-2 border-t border-[#302839] sm:grid-cols-4 lg:border-t-0"
+          className="grid w-full max-w-xl grid-cols-2 border-t border-[#302839] sm:grid-cols-5 lg:border-t-0"
         >
-          {footerLinks.map((link, index) => (
-            <Link
-              className="group flex min-h-24 flex-col justify-between border-b border-[#302839] p-4 text-sm text-[#a198a5] transition-colors hover:bg-[#141018] hover:text-[#fff8f5] sm:border-b-0 sm:border-l"
-              href={link.href}
-              key={link.label}
-            >
-              <span className="font-mono text-[9px] text-[#554d59]">
-                0{index + 1}
-              </span>
-              <span className="flex items-center justify-between gap-2">
-                {link.label}
-                <ArrowUpRight
-                  className="text-[#625a67] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#ff8175]"
-                  size={14}
-                />
-              </span>
-            </Link>
-          ))}
+          <FooterCell href="/markets" index={1} label="Markets" />
+          <TradeNavLink className={footerClass}>
+            <span className="font-mono text-[9px] text-[#554d59]">02</span>
+            <span className="flex items-center justify-between gap-2">
+              Trade
+              <ArrowUpRight
+                className="text-[#625a67] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#ff8175]"
+                size={14}
+              />
+            </span>
+          </TradeNavLink>
+          <FooterCell href="/balances" index={3} label="Balances" />
+          <FooterCell href="/login" index={4} label="Log in" />
+          <FooterCell href="/signup" index={5} label="Open account" />
         </nav>
       </div>
 
@@ -84,5 +80,28 @@ export function SiteFooter() {
         </div>
       </div>
     </footer>
+  );
+}
+
+function FooterCell({
+  href,
+  index,
+  label,
+}: {
+  href: string;
+  index: number;
+  label: string;
+}) {
+  return (
+    <Link className={footerClass} href={href}>
+      <span className="font-mono text-[9px] text-[#554d59]">0{index}</span>
+      <span className="flex items-center justify-between gap-2">
+        {label}
+        <ArrowUpRight
+          className="text-[#625a67] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#ff8175]"
+          size={14}
+        />
+      </span>
+    </Link>
   );
 }

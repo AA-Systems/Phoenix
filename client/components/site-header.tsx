@@ -6,15 +6,21 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Brand } from "@/components/brand";
+import { TradeNavLink } from "@/components/trade-nav-link";
 import { Button } from "@/components/ui/button";
 import { logout, restoreSession } from "@/lib/api";
 import { getSession } from "@/lib/session";
 import type { Session } from "@/lib/types";
 
-export function SiteHeader() {
+export function SiteHeader({
+  variant = "default",
+}: {
+  variant?: "default" | "desk";
+}) {
   const [session, setSession] = useState<Session | null>(null);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const desk = variant === "desk";
 
   useEffect(() => {
     const sync = () => setSession(getSession());
@@ -36,26 +42,42 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-3 z-40 px-3">
-      <div className="mx-auto flex h-16 max-w-[1380px] items-center justify-between rounded-2xl border border-[#2c2533] bg-[#100d14]/95 px-5 shadow-[0_16px_50px_rgba(0,0,0,0.28)] backdrop-blur lg:px-6">
+    <header
+      className={
+        desk
+          ? "sticky top-0 z-40 shrink-0 border-b border-[#2c2533] bg-[#100d14]/95 backdrop-blur"
+          : "sticky top-3 z-40 px-3"
+      }
+    >
+      <div
+        className={
+          desk
+            ? "flex h-12 w-full items-center justify-between px-3 sm:px-4"
+            : "mx-auto flex h-16 max-w-[1380px] items-center justify-between rounded-2xl border border-[#2c2533] bg-[#100d14]/95 px-5 shadow-[0_16px_50px_rgba(0,0,0,0.28)] backdrop-blur lg:px-6"
+        }
+      >
         <Brand />
 
-        <nav className="hidden items-center gap-1 rounded-full bg-[#17131d] p-1 text-sm text-[#aaa1ad] md:flex">
+        <nav
+          className={`hidden items-center gap-1 text-sm text-[#aaa1ad] md:flex ${
+            desk ? "" : "rounded-full bg-[#17131d] p-1"
+          }`}
+        >
           <Link
-            className="rounded-full px-4 py-2 hover:bg-[#241d2b] hover:text-white"
+            className="rounded-full px-3 py-1.5 hover:bg-[#241d2b] hover:text-white sm:px-4 sm:py-2"
             href="/markets"
           >
             Markets
           </Link>
           <Link
-            className="rounded-full px-4 py-2 hover:bg-[#241d2b] hover:text-white"
+            className="rounded-full px-3 py-1.5 hover:bg-[#241d2b] hover:text-white sm:px-4 sm:py-2"
             href="/balances"
           >
             Balances
           </Link>
-          <span className="cursor-not-allowed rounded-full px-4 py-2 text-[#57505e]">
-            Trade · soon
-          </span>
+          <TradeNavLink className="rounded-full px-3 py-1.5 hover:bg-[#241d2b] hover:text-white sm:px-4 sm:py-2">
+            Trade
+          </TradeNavLink>
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
@@ -89,7 +111,13 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <div className="mx-auto mt-2 max-w-[1380px] rounded-2xl border border-[#2c2533] bg-[#15111a] p-5 shadow-2xl md:hidden">
+        <div
+          className={
+            desk
+              ? "border-t border-[#2c2533] bg-[#15111a] p-4 md:hidden"
+              : "mx-auto mt-2 max-w-[1380px] rounded-2xl border border-[#2c2533] bg-[#15111a] p-5 shadow-2xl md:hidden"
+          }
+        >
           <div className="flex flex-col gap-4 text-sm text-[#ded6df]">
             <Link href="/markets" onClick={() => setOpen(false)}>
               Markets
@@ -97,6 +125,7 @@ export function SiteHeader() {
             <Link href="/balances" onClick={() => setOpen(false)}>
               Balances
             </Link>
+            <TradeNavLink onClick={() => setOpen(false)}>Trade</TradeNavLink>
             {session ? (
               <Button tone="quiet" onClick={handleLogout}>
                 Log out

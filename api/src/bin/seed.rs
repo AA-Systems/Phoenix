@@ -8,12 +8,184 @@ use dotenv::dotenv;
 use rand_core::OsRng;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{PgPool, Row};
-use types::ledger_entries::{LedgerEntryType, LedgerIntent};
 use uuid::Uuid;
 
 const SEED_EMAIL: &str = "akshatarora130@gmail.com";
 const SEED_PASSWORD: &str = "akshat1!2!3arora";
 const SEED_NAME: &str = "Akshat Arora";
+
+struct AssetSpec {
+    symbol: &'static str,
+    name: &'static str,
+    decimals: i32,
+}
+
+struct MarketSpec {
+    symbol: &'static str,
+    name: &'static str,
+    base: &'static str,
+    quote: &'static str,
+    price_tick_size: i64,
+    quantity_step_size: i64,
+    min_order_quantity: i64,
+    min_order_notional: i64,
+}
+
+const ASSETS: &[AssetSpec] = &[
+    AssetSpec {
+        symbol: "USDC",
+        name: "USD Coin",
+        decimals: 6,
+    },
+    AssetSpec {
+        symbol: "USDT",
+        name: "Tether",
+        decimals: 6,
+    },
+    AssetSpec {
+        symbol: "BTC",
+        name: "Bitcoin",
+        decimals: 8,
+    },
+    AssetSpec {
+        symbol: "ETH",
+        name: "Ethereum",
+        decimals: 8,
+    },
+    AssetSpec {
+        symbol: "SOL",
+        name: "Solana",
+        decimals: 9,
+    },
+    AssetSpec {
+        symbol: "HYPE",
+        name: "Hyperliquid",
+        decimals: 6,
+    },
+    AssetSpec {
+        symbol: "DOGE",
+        name: "Dogecoin",
+        decimals: 8,
+    },
+    AssetSpec {
+        symbol: "LINK",
+        name: "Chainlink",
+        decimals: 8,
+    },
+    AssetSpec {
+        symbol: "AVAX",
+        name: "Avalanche",
+        decimals: 8,
+    },
+    AssetSpec {
+        symbol: "SUI",
+        name: "Sui",
+        decimals: 9,
+    },
+];
+
+const MARKETS: &[MarketSpec] = &[
+    MarketSpec {
+        symbol: "BTC_USDC",
+        name: "BTC / USDC",
+        base: "BTC",
+        quote: "USDC",
+        price_tick_size: 10_000,
+        quantity_step_size: 1_000,
+        min_order_quantity: 10_000,
+        min_order_notional: 10_000_000,
+    },
+    MarketSpec {
+        symbol: "ETH_USDC",
+        name: "ETH / USDC",
+        base: "ETH",
+        quote: "USDC",
+        price_tick_size: 10_000,
+        quantity_step_size: 10_000,
+        min_order_quantity: 100_000,
+        min_order_notional: 10_000_000,
+    },
+    MarketSpec {
+        symbol: "SOL_USDC",
+        name: "SOL / USDC",
+        base: "SOL",
+        quote: "USDC",
+        price_tick_size: 10_000,
+        quantity_step_size: 1_000_000,
+        min_order_quantity: 10_000_000,
+        min_order_notional: 5_000_000,
+    },
+    MarketSpec {
+        symbol: "HYPE_USDC",
+        name: "HYPE / USDC",
+        base: "HYPE",
+        quote: "USDC",
+        price_tick_size: 1_000,
+        quantity_step_size: 100_000,
+        min_order_quantity: 1_000_000,
+        min_order_notional: 5_000_000,
+    },
+    MarketSpec {
+        symbol: "DOGE_USDC",
+        name: "DOGE / USDC",
+        base: "DOGE",
+        quote: "USDC",
+        price_tick_size: 100,
+        quantity_step_size: 100_000_000,
+        min_order_quantity: 1_000_000_000,
+        min_order_notional: 5_000_000,
+    },
+    MarketSpec {
+        symbol: "LINK_USDC",
+        name: "LINK / USDC",
+        base: "LINK",
+        quote: "USDC",
+        price_tick_size: 1_000,
+        quantity_step_size: 10_000,
+        min_order_quantity: 100_000,
+        min_order_notional: 5_000_000,
+    },
+    MarketSpec {
+        symbol: "AVAX_USDC",
+        name: "AVAX / USDC",
+        base: "AVAX",
+        quote: "USDC",
+        price_tick_size: 1_000,
+        quantity_step_size: 10_000,
+        min_order_quantity: 100_000,
+        min_order_notional: 5_000_000,
+    },
+    MarketSpec {
+        symbol: "SUI_USDC",
+        name: "SUI / USDC",
+        base: "SUI",
+        quote: "USDC",
+        price_tick_size: 100,
+        quantity_step_size: 10_000_000,
+        min_order_quantity: 100_000_000,
+        min_order_notional: 5_000_000,
+    },
+    MarketSpec {
+        symbol: "BTC_USDT",
+        name: "BTC / USDT",
+        base: "BTC",
+        quote: "USDT",
+        price_tick_size: 10_000,
+        quantity_step_size: 1_000,
+        min_order_quantity: 10_000,
+        min_order_notional: 10_000_000,
+    },
+    MarketSpec {
+        symbol: "ETH_USDT",
+        name: "ETH / USDT",
+        base: "ETH",
+        quote: "USDT",
+        price_tick_size: 10_000,
+        quantity_step_size: 10_000,
+        min_order_quantity: 100_000,
+        min_order_notional: 10_000_000,
+    },
+];
 
 #[tokio::main]
 async fn main() {
@@ -33,84 +205,50 @@ async fn main() {
         .await
         .expect("failed to seed user");
 
-    let sol_id = upsert_asset(&pool, "SOL", "Solana", 9)
+    let mut asset_ids = std::collections::HashMap::<&str, Uuid>::new();
+    for asset in ASSETS {
+        let id = upsert_asset(&pool, asset.symbol, asset.name, asset.decimals)
+            .await
+            .unwrap_or_else(|err| panic!("failed to seed {}: {err}", asset.symbol));
+        asset_ids.insert(asset.symbol, id);
+    }
+
+    let mut market_ids = Vec::new();
+    for market in MARKETS {
+        let base_id = *asset_ids
+            .get(market.base)
+            .unwrap_or_else(|| panic!("missing base asset {}", market.base));
+        let quote_id = *asset_ids
+            .get(market.quote)
+            .unwrap_or_else(|| panic!("missing quote asset {}", market.quote));
+        let id = upsert_market(
+            &pool,
+            market.symbol,
+            market.name,
+            base_id,
+            quote_id,
+            market.price_tick_size,
+            market.quantity_step_size,
+            market.min_order_quantity,
+            market.min_order_notional,
+        )
         .await
-        .expect("failed to seed SOL");
-    let usdc_id = upsert_asset(&pool, "USDC", "USD Coin", 6)
-        .await
-        .expect("failed to seed USDC");
-    let usd_id = upsert_asset(&pool, "USD", "US Dollar", 2)
-        .await
-        .expect("failed to seed USD");
-    let inr_id = upsert_asset(&pool, "INR", "Indian Rupee", 2)
-        .await
-        .expect("failed to seed INR");
+        .unwrap_or_else(|err| panic!("failed to seed {}: {err}", market.symbol));
+        market_ids.push((market.symbol, id));
+    }
 
-    let sol_usdc = upsert_market(
-        &pool,
-        "SOL_USDC",
-        "SOL / USDC",
-        sol_id,
-        usdc_id,
-        10_000,     // 0.01 USDC
-        1_000_000,  // 0.001 SOL
-        10_000_000, // 0.01 SOL
-        5_000_000,  // 5 USDC
-    )
-    .await
-    .expect("failed to seed SOL_USDC");
-
-    let sol_usd = upsert_market(
-        &pool,
-        "SOL_USD",
-        "SOL / USD",
-        sol_id,
-        usd_id,
-        1, // 0.01 USD
-        1_000_000,
-        10_000_000,
-        500, // 5.00 USD
-    )
-    .await
-    .expect("failed to seed SOL_USD");
-
-    let sol_inr = upsert_market(
-        &pool,
-        "SOL_INR",
-        "SOL / INR",
-        sol_id,
-        inr_id,
-        1, // 0.01 INR
-        1_000_000,
-        10_000_000,
-        50_000, // ₹500.00
-    )
-    .await
-    .expect("failed to seed SOL_INR");
-
-    // Reset demo ledger so re-seed stays idempotent for UI testing.
-    clear_user_ledger(&pool, user_id).await;
-
-    // Generous demo balances + matching deposit ledger rows (atomic units)
-    seed_deposit(&pool, user_id, sol_id, 100_000_000_000).await; // 100 SOL
-    seed_deposit(&pool, user_id, usdc_id, 1_000_000_000_000).await; // 1,000,000 USDC
-    seed_deposit(&pool, user_id, usd_id, 100_000_00).await; // 100,000.00 USD
-    seed_deposit(&pool, user_id, inr_id, 1_000_000_00).await; // ₹1,000,000.00
-
-    // Sample lock so activity UI shows more than deposits (10 USDC locked).
-    seed_lock(&pool, user_id, usdc_id, 10_000_000).await;
-
-    println!("seed complete");
+    println!("seed complete (catalog only — use demo credit for balances)");
     println!("  user_id:    {user_id}");
     println!("  email:      {SEED_EMAIL}");
     println!("  password:   {SEED_PASSWORD}");
-    println!("  SOL:        {sol_id}");
-    println!("  USDC:       {usdc_id}");
-    println!("  USD:        {usd_id}");
-    println!("  INR:        {inr_id}");
-    println!("  SOL_USDC:   {sol_usdc}");
-    println!("  SOL_USD:    {sol_usd}");
-    println!("  SOL_INR:    {sol_inr}");
+    println!("  assets:     {}", ASSETS.len());
+    println!("  markets:    {}", MARKETS.len());
+    for asset in ASSETS {
+        println!("  {:<8} {}", asset.symbol, asset_ids[asset.symbol]);
+    }
+    for (symbol, id) in market_ids {
+        println!("  {symbol:<12} {id}");
+    }
 }
 
 fn hash_password(password: &str) -> String {
@@ -225,72 +363,4 @@ async fn upsert_market(
     .await?;
 
     Ok(row.get("id"))
-}
-
-async fn clear_user_ledger(pool: &PgPool, user_id: Uuid) {
-    sqlx::query("DELETE FROM ledger_entries WHERE user_id = $1")
-        .bind(user_id)
-        .execute(pool)
-        .await
-        .expect("failed to clear seed ledger");
-}
-
-async fn seed_deposit(pool: &PgPool, user_id: Uuid, asset_id: Uuid, available: i64) {
-    let command_id = Uuid::new_v4();
-    let intent = LedgerIntent {
-        command_id,
-        sequence: 0,
-        user_id,
-        asset_id,
-        entry_type: LedgerEntryType::Deposit,
-        available_delta: available,
-        locked_delta: 0,
-        available_after: available,
-        locked_after: 0,
-        reference_id: Some(command_id),
-        reference_type: Some("seed".into()),
-    };
-    db::balances::persist_intents::persist_intents(pool, &[intent])
-        .await
-        .expect("failed to seed deposit");
-}
-
-async fn seed_lock(pool: &PgPool, user_id: Uuid, asset_id: Uuid, amount: i64) {
-    let row = sqlx::query(
-        r#"
-        SELECT available, locked
-        FROM balances
-        WHERE user_id = $1 AND asset_id = $2
-        "#,
-    )
-    .bind(user_id)
-    .bind(asset_id)
-    .fetch_one(pool)
-    .await
-    .expect("balance must exist before seed lock");
-
-    let available: i64 = row.get("available");
-    let locked: i64 = row.get("locked");
-    assert!(
-        available >= amount,
-        "seed lock amount exceeds available balance"
-    );
-
-    let command_id = Uuid::new_v4();
-    let intent = LedgerIntent {
-        command_id,
-        sequence: 0,
-        user_id,
-        asset_id,
-        entry_type: LedgerEntryType::Lock,
-        available_delta: -amount,
-        locked_delta: amount,
-        available_after: available - amount,
-        locked_after: locked + amount,
-        reference_id: Some(command_id),
-        reference_type: Some("seed".into()),
-    };
-    db::balances::persist_intents::persist_intents(pool, &[intent])
-        .await
-        .expect("failed to seed lock");
 }
