@@ -14,6 +14,7 @@ import { TradesPanel } from "@/components/trade/trades-panel";
 import {
   getBalances,
   getOrderBook,
+  getRecentTrades,
   listAssets,
   listMarkets,
   listOpenOrders,
@@ -22,13 +23,14 @@ import {
 import { formatMarketPair } from "@/lib/markets";
 import { decimalsMapFromAssets } from "@/lib/trade-format";
 import { useTradeFeed } from "@/lib/use-trade-feed";
-import type { Market, OrderBookDepth } from "@/lib/types";
+import type { Market, OrderBookDepth, TradeView } from "@/lib/types";
 
 export function TradeWorkspace({ symbol }: { symbol: string }) {
   const marketSymbol = decodeURIComponent(symbol).trim().toUpperCase();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [market, setMarket] = useState<Market | null>(null);
   const [bookSeed, setBookSeed] = useState<OrderBookDepth | null>(null);
+  const [tradesSeed, setTradesSeed] = useState<TradeView[] | null>(null);
   const [decimalsBySymbol, setDecimalsBySymbol] = useState<Record<
     string,
     number
@@ -47,20 +49,22 @@ export function TradeWorkspace({ symbol }: { symbol: string }) {
     setOrders,
     connected,
     wsError,
-  } = useTradeFeed(marketSymbol, bookSeed);
+  } = useTradeFeed(marketSymbol, bookSeed, tradesSeed);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
     setPriceHint(null);
+    setTradesSeed(null);
 
     async function boot() {
       try {
-        const [allMarkets, assets, depth] = await Promise.all([
+        const [allMarkets, assets, depth, recentTrades] = await Promise.all([
           listMarkets(),
           listAssets(),
           getOrderBook(marketSymbol).catch(() => null),
+          getRecentTrades(marketSymbol, 50).catch(() => []),
         ]);
         if (!active) return;
 
@@ -84,6 +88,7 @@ export function TradeWorkspace({ symbol }: { symbol: string }) {
             asks: [],
           },
         );
+        setTradesSeed(recentTrades);
 
         const session = await restoreSession();
         if (!active) return;

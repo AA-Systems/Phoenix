@@ -11,6 +11,7 @@ import type {
   OrderBookDepth,
   OrderType,
   Session,
+  TradeView,
 } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -158,6 +159,16 @@ export function getOrderBook(marketSymbol: string): Promise<OrderBookDepth> {
   return request<OrderBookDepth>("/api/v1/markets/book", {
     method: "POST",
     body: JSON.stringify({ market_symbol: marketSymbol }),
+  });
+}
+
+export function getRecentTrades(
+  marketSymbol: string,
+  limit = 50,
+): Promise<TradeView[]> {
+  return request<TradeView[]>("/api/v1/markets/trades", {
+    method: "POST",
+    body: JSON.stringify({ market_symbol: marketSymbol, limit }),
   });
 }
 

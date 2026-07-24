@@ -4,6 +4,7 @@ use types::balances::AssetBalance;
 use types::order::OpenOrderView;
 use types::orderbook::OrderBookDepth;
 use types::query::{EngineQuery, EngineReply};
+use types::trade::TradeView;
 use uuid::Uuid;
 
 #[derive(Debug)]
@@ -119,6 +120,36 @@ pub async fn get_order_book(
             book: Some(book), ..
         } => Ok(book),
         EngineReply::GetOrderBook { book: None, .. } => Err(EngineQueryError::NotFound),
+        _ => Err(EngineQueryError::InvalidReply),
+    }
+}
+
+pub async fn get_recent_trades(
+    redis: &mut ConnectionManager,
+    queries_stream: &str,
+    market_symbol: String,
+    limit: u32,
+    timeout_secs: f64,
+) -> Result<Vec<TradeView>, EngineQueryError> {
+    let request_id = Uuid::new_v4();
+    let reply = request_reply(
+        redis,
+        queries_stream,
+        EngineQuery::GetRecentTrades {
+            request_id,
+            market_symbol,
+            limit,
+        },
+        timeout_secs,
+    )
+    .await?;
+
+    match reply {
+        EngineReply::GetRecentTrades {
+            trades: Some(trades),
+            ..
+        } => Ok(trades),
+        EngineReply::GetRecentTrades { trades: None, .. } => Err(EngineQueryError::NotFound),
         _ => Err(EngineQueryError::InvalidReply),
     }
 }

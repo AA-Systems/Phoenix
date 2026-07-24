@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::balances::AssetBalance;
 use crate::order::OpenOrderView;
 use crate::orderbook::OrderBookDepth;
+use crate::trade::TradeView;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -19,6 +20,11 @@ pub enum EngineQuery {
     GetOrderBook {
         request_id: Uuid,
         market_symbol: String,
+    },
+    GetRecentTrades {
+        request_id: Uuid,
+        market_symbol: String,
+        limit: u32,
     },
 }
 
@@ -37,6 +43,10 @@ pub enum EngineReply {
         request_id: Uuid,
         book: Option<OrderBookDepth>,
     },
+    GetRecentTrades {
+        request_id: Uuid,
+        trades: Option<Vec<TradeView>>,
+    },
 }
 
 impl EngineQuery {
@@ -44,7 +54,8 @@ impl EngineQuery {
         match self {
             EngineQuery::GetBalances { request_id, .. }
             | EngineQuery::GetOpenOrders { request_id, .. }
-            | EngineQuery::GetOrderBook { request_id, .. } => *request_id,
+            | EngineQuery::GetOrderBook { request_id, .. }
+            | EngineQuery::GetRecentTrades { request_id, .. } => *request_id,
         }
     }
 
@@ -58,7 +69,8 @@ impl EngineReply {
         match self {
             EngineReply::GetBalances { request_id, .. }
             | EngineReply::GetOpenOrders { request_id, .. }
-            | EngineReply::GetOrderBook { request_id, .. } => *request_id,
+            | EngineReply::GetOrderBook { request_id, .. }
+            | EngineReply::GetRecentTrades { request_id, .. } => *request_id,
         }
     }
 }

@@ -1,6 +1,6 @@
 use order_engine::commands::apply_command::apply_command;
 use order_engine::queries::answer_query::{
-    answer_query, balances_for_user, open_orders_for_user, order_book_depth,
+    answer_query, balances_for_user, open_orders_for_user, order_book_depth, recent_trades,
 };
 use types::{
     command::Command,
@@ -105,4 +105,62 @@ fn open_orders_and_book_after_resting_buy() {
     }
 
     assert!(order_book_depth(&fx.state, "NOPE").is_none());
+}
+
+#[test]
+fn recent_trades_newest_first_for_market() {
+    let mut fx = fixture();
+
+    apply_command(
+        &mut fx.state,
+        Command::CreateOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.other_user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Sell,
+            price: PRICE,
+            quantity: QTY,
+        },
+    )
+    .unwrap();
+
+    apply_command(
+        &mut fx.state,
+        Command::CreateOrder {
+            command_id: Uuid::new_v4(),
+            user_id: fx.user_id,
+            market_symbol: MARKET.into(),
+            order_type: OrderType::Buy,
+            price: PRICE,
+            quantity: QTY,
+        },
+    )
+    .unwrap();
+
+    let trades = recent_trades(&fx.state, MARKET, 50).expect("market exists");
+    assert_eq!(trades.len(), 1);
+    assert_eq!(trades[0].price, PRICE);
+    assert_eq!(trades[0].quantity, QTY);
+    assert_eq!(trades[0].market_symbol, MARKET);
+
+    assert!(recent_trades(&fx.state, "NOPE", 10).is_none());
+
+    let request_id = Uuid::new_v4();
+    match answer_query(
+        &fx.state,
+        EngineQuery::GetRecentTrades {
+            request_id,
+            market_symbol: MARKET.into(),
+            limit: 10,
+        },
+    ) {
+        EngineReply::GetRecentTrades {
+            request_id: replied,
+            trades: Some(list),
+        } => {
+            assert_eq!(replied, request_id);
+            assert_eq!(list.len(), 1);
+        }
+        other => panic!("unexpected reply: {other:?}"),
+    }
 }

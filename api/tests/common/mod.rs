@@ -173,6 +173,12 @@ pub async fn spawn_empty_balance_query_responder() -> tokio::task::JoinHandle<()
                                         asks: Vec::new(),
                                     }),
                                 },
+                                EngineQuery::GetRecentTrades { request_id, .. } => {
+                                    EngineReply::GetRecentTrades {
+                                        request_id,
+                                        trades: Some(Vec::new()),
+                                    }
+                                }
                             };
                             let body = serde_json::to_string(&reply).unwrap();
                             let key = format!("engine-reply:{}", reply.request_id());

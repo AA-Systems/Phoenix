@@ -41,9 +41,24 @@ function applyLevelDelta(
   return next;
 }
 
+function mergeTrades(seed: TradeView[], live: TradeView[]): TradeView[] {
+  const byId = new Map<string, TradeView>();
+  for (const trade of seed) byId.set(trade.id, trade);
+  for (const trade of live) {
+    if (!byId.has(trade.id)) byId.set(trade.id, trade);
+  }
+  return [...byId.values()]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, 80);
+}
+
 export function useTradeFeed(
   marketSymbol: string,
   bookSeed: OrderBookDepth | null,
+  tradesSeed: TradeView[] | null = null,
 ) {
   const [book, setBook] = useState<OrderBookDepth | null>(bookSeed);
   const [trades, setTrades] = useState<TradeView[]>([]);
@@ -58,7 +73,14 @@ export function useTradeFeed(
   }, [bookSeed]);
 
   useEffect(() => {
-    setTrades([]);
+    if (tradesSeed === null) {
+      setTrades([]);
+      return;
+    }
+    setTrades((prev) => mergeTrades(tradesSeed, prev));
+  }, [tradesSeed]);
+
+  useEffect(() => {
     let closed = false;
     let socket: WebSocket | null = null;
 
@@ -163,7 +185,12 @@ export function useTradeFeed(
           ) {
             return;
           }
-          setTrades((prev) => [payload.trade, ...prev].slice(0, 80));
+          setTrades((prev) => {
+            if (prev.some((trade) => trade.id === payload.trade.id)) {
+              return prev;
+            }
+            return [payload.trade, ...prev].slice(0, 80);
+          });
         }
 
         if (payload.type === "balance_updated") {

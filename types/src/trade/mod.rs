@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod get_recent_trades_request;
+
 pub struct Trade {
     pub id: Uuid,
     pub market_id: Uuid,

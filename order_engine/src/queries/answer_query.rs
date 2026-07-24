@@ -2,6 +2,7 @@ use types::balances::AssetBalance;
 use types::order::{OpenOrderView, OrderStatus};
 use types::orderbook::{OrderBookDepth, PriceLevel};
 use types::query::{EngineQuery, EngineReply};
+use types::trade::TradeView;
 use uuid::Uuid;
 
 use crate::memory::OrderEngineState;
@@ -28,6 +29,14 @@ pub fn answer_query(state: &OrderEngineState, query: EngineQuery) -> EngineReply
         } => EngineReply::GetOrderBook {
             request_id,
             book: order_book_depth(state, &market_symbol),
+        },
+        EngineQuery::GetRecentTrades {
+            request_id,
+            market_symbol,
+            limit,
+        } => EngineReply::GetRecentTrades {
+            request_id,
+            trades: recent_trades(state, &market_symbol, limit as usize),
         },
     }
 }
@@ -112,4 +121,39 @@ pub fn order_book_depth(state: &OrderEngineState, market_symbol: &str) -> Option
         bids,
         asks,
     })
+}
+
+pub fn recent_trades(
+    state: &OrderEngineState,
+    market_symbol: &str,
+    limit: usize,
+) -> Option<Vec<TradeView>> {
+    let symbol = market_symbol.trim().to_uppercase();
+    let market = state
+        .markets
+        .iter()
+        .find(|market| market.symbol == symbol)?;
+    let take = limit.clamp(1, 100);
+
+    let trades = state
+        .trades
+        .iter()
+        .rev()
+        .filter(|trade| trade.market_id == market.id)
+        .take(take)
+        .map(|trade| TradeView {
+            id: trade.id,
+            market_id: trade.market_id,
+            market_symbol: symbol.clone(),
+            maker_order_id: trade.maker_order_id.clone(),
+            taker_order_id: trade.taker_order_id.clone(),
+            price: trade.price,
+            quantity: trade.quantity,
+            buyer_user_id: trade.buyer_user_id,
+            seller_user_id: trade.seller_user_id,
+            created_at: trade.created_at,
+        })
+        .collect();
+
+    Some(trades)
 }
