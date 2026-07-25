@@ -17,6 +17,9 @@ pub struct Config {
     pub engine_commands_stream: String,
     pub engine_queries_stream: String,
     pub engine_query_timeout_secs: f64,
+    pub exchange_events_stream: String,
+    pub candle_builder_group: String,
+    pub candle_builder_consumer: String,
 }
 
 impl Config {
@@ -55,6 +58,12 @@ impl Config {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(3.0),
+            exchange_events_stream: env::var("REDIS_EXCHANGE_EVENTS_STREAM")
+                .unwrap_or_else(|_| "exchange-events".to_string()),
+            candle_builder_group: env::var("REDIS_CANDLE_BUILDER_GROUP")
+                .unwrap_or_else(|_| "candle-builder".to_string()),
+            candle_builder_consumer: env::var("REDIS_CANDLE_BUILDER_CONSUMER")
+                .unwrap_or_else(|_| "candle-builder-1".to_string()),
         }
     }
 }

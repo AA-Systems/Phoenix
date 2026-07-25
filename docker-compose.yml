@@ -84,6 +84,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  candle_builder:
+    build:
+      context: .
+      dockerfile: candle_builder/Dockerfile
+    container_name: candle_builder_cex
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      order_engine:
+        condition: service_started
+    restart: unless-stopped
+
   client:
     build:
       context: ./client

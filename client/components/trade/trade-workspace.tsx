@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
 import { AssetDecimalsProvider } from "@/components/trade/asset-decimals";
-import { ChartPlaceholder } from "@/components/trade/chart-placeholder";
+import { PriceChart } from "@/components/trade/price-chart";
 import { OpenOrdersPanel } from "@/components/trade/open-orders-panel";
 import { OrderBookPanel } from "@/components/trade/order-book-panel";
 import { OrderForm } from "@/components/trade/order-form";
@@ -162,7 +162,11 @@ export function TradeWorkspace({ symbol }: { symbol: string }) {
             ].join(" ")}
           >
             <div className="min-h-[280px] md:col-span-2 md:min-h-0 lg:col-span-1 lg:col-start-1 lg:row-start-1">
-              <ChartPlaceholder pair={formatMarketPair(market.symbol)} />
+              <PriceChart
+                marketSymbol={market.symbol}
+                pair={formatMarketPair(market.symbol)}
+                trades={trades}
+              />
             </div>
 
             <div className="min-h-[360px] md:min-h-0 lg:col-start-2 lg:row-start-1">

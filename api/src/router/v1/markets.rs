@@ -6,6 +6,7 @@ use axum::{
 use crate::{
     app_state::AppState,
     handlers::markets::{
+        get_candles::get_candles_for_market,
         get_markets::{get_market, list_markets},
         get_order_book::get_order_book_depth,
         get_recent_trades::get_recent_trades_for_market,
@@ -20,6 +21,7 @@ pub fn markets_router(app_state: AppState) -> Router<AppState> {
         .route("/", get(list_markets))
         .route("/book", post(get_order_book_depth))
         .route("/trades", post(get_recent_trades_for_market))
+        .route("/candles", post(get_candles_for_market))
         .route("/{base}/{quote}", get(get_market));
 
     let admin_routes = Router::new()

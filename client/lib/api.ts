@@ -13,6 +13,7 @@ import type {
   Session,
   TradeView,
 } from "@/lib/types";
+import type { Candle, CandleInterval } from "@/lib/candles";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 let refreshPromise: Promise<Session> | null = null;
@@ -169,6 +170,21 @@ export function getRecentTrades(
   return request<TradeView[]>("/api/v1/markets/trades", {
     method: "POST",
     body: JSON.stringify({ market_symbol: marketSymbol, limit }),
+  });
+}
+
+export function getCandles(
+  marketSymbol: string,
+  interval: CandleInterval,
+  limit = 200,
+): Promise<Candle[]> {
+  return request<Candle[]>("/api/v1/markets/candles", {
+    method: "POST",
+    body: JSON.stringify({
+      market_symbol: marketSymbol,
+      interval,
+      limit,
+    }),
   });
 }
 

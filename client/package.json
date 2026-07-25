@@ -11,6 +11,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "lightweight-charts": "^5.2.0",
     "lucide-react": "^1.25.0",
     "next": "16.2.10",
     "react": "19.2.4",
@@ -23,9 +24,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "prettier": "^3.6.2"
+    "typescript": "^5"
   },
   "ignoreScripts": [
     "sharp",

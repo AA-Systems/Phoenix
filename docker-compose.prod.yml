@@ -37,6 +37,15 @@ services:
       - "3002:3002"
     restart: unless-stopped
 
+  candle_builder:
+    build:
+      context: .
+      dockerfile: candle_builder/Dockerfile
+    container_name: candle_builder_cex
+    env_file:
+      - .env
+    restart: unless-stopped
+
   client:
     build:
       context: ./client

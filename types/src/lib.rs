@@ -1,6 +1,7 @@
 pub mod assets;
 pub mod auth;
 pub mod balances;
+pub mod candle;
 pub mod command;
 pub mod event;
 pub mod ledger_entries;

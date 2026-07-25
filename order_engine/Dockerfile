@@ -8,6 +8,7 @@ COPY db ./db
 COPY types ./types
 COPY order_engine ./order_engine
 COPY ws_server ./ws_server
+COPY candle_builder ./candle_builder
 RUN cargo build --release -p order_engine
 
 # --- run ---

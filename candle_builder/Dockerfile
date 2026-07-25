@@ -9,12 +9,11 @@ COPY types ./types
 COPY order_engine ./order_engine
 COPY ws_server ./ws_server
 COPY candle_builder ./candle_builder
-RUN cargo build --release -p api
+RUN cargo build --release -p candle_builder
 
 # --- run ---
 FROM debian:bookworm-slim
 WORKDIR /cex
 
-COPY --from=builder /cex/target/release/api /cex/api
-EXPOSE 3000
-CMD ["/cex/api"]
+COPY --from=builder /cex/target/release/candle_builder /cex/candle_builder
+CMD ["/cex/candle_builder"]

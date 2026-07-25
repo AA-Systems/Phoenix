@@ -1,3 +1,4 @@
+pub mod get_candles;
 pub mod get_markets;
 pub mod get_order_book;
 pub mod get_recent_trades;
