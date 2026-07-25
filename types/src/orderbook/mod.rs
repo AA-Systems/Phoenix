@@ -5,12 +5,14 @@ use uuid::Uuid;
 
 pub mod get_order_book_request;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BookOrder {
     pub user_id: Uuid,
     pub order_id: String,
     pub quantity: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderBook {
     /// Price → resting buy orders (highest bid first via reverse iteration).
     pub bids: BTreeMap<i64, VecDeque<BookOrder>>,

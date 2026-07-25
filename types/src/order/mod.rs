@@ -38,6 +38,7 @@ pub struct OpenOrderView {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Order {
     pub id: String,
     pub user_id: Uuid,

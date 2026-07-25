@@ -6,6 +6,10 @@ use order_engine::helper::handle_entry::handle_entry;
 use order_engine::helper::handle_query_entry::handle_query_entry;
 use order_engine::memory::OrderEngineState;
 use order_engine::memory::load_from_db::load_from_db;
+use order_engine::memory::replay::{
+    drain_pending, maybe_snapshot, replay_since_cursors, snapshot_ticker,
+};
+use order_engine::memory::snapshot::{self, SnapshotMeta};
 use redis::aio::ConnectionManager;
 use redis::streams::{StreamReadOptions, StreamReadReply};
 use redis::{AsyncCommands, Client, RedisResult};
@@ -61,13 +65,19 @@ async fn main() {
         .await
         .expect("cannot connect to database");
 
-    let state = load_from_db(&pool)
+    let mut state = load_from_db(&pool)
         .await
         .expect("failed to load engine state from database");
-    let state = Arc::new(Mutex::new(state));
+
+    let mut meta = snapshot::load_into_state(&pool, &mut state)
+        .await
+        .expect("failed to load engine snapshot");
 
     let client = Client::open(redis_url.as_str()).expect("invalid REDIS_URL");
 
+    let mut boot_conn = ConnectionManager::new(client.clone())
+        .await
+        .expect("failed to connect to Redis (boot)");
     let mut cmd_conn = ConnectionManager::new(client.clone())
         .await
         .expect("failed to connect to Redis (commands)");
@@ -79,39 +89,91 @@ async fn main() {
     ensure_consumer_group(&mut cmd_conn, &engine_stream, &group).await;
     ensure_consumer_group(&mut query_conn, &query_stream, &query_group).await;
 
+    // Catch up any commands written after the snapshot.
+    replay_since_cursors(
+        &mut boot_conn,
+        &pool,
+        &mut state,
+        &mut meta,
+        &order_stream,
+        &engine_stream,
+        &events_stream,
+    )
+    .await;
+
+    // Finish any deliveries that were not ACKed before the last crash.
+    drain_pending(
+        &mut boot_conn,
+        &pool,
+        &mut state,
+        &mut meta,
+        &order_stream,
+        &engine_stream,
+        &group,
+        &consumer,
+        &events_stream,
+    )
+    .await;
+
+    // Persist a clean baseline before accepting new traffic.
+    let mut commands_since = 0u32;
+    maybe_snapshot(&pool, &state, &meta, &mut commands_since, true).await;
+
+    let state = Arc::new(Mutex::new(state));
+    let meta = Arc::new(Mutex::new(meta));
+
     let command_state = Arc::clone(&state);
+    let command_meta = Arc::clone(&meta);
     let command_pool = pool.clone();
     let order_stream_cmd = order_stream.clone();
     let engine_stream_cmd = engine_stream.clone();
     let group_cmd = group.clone();
     let consumer_cmd = consumer.clone();
+    let events_stream_cmd = events_stream.clone();
 
     let commands = tokio::spawn(async move {
         run_command_loop(
             cmd_conn,
             command_pool,
             command_state,
+            command_meta,
             order_stream_cmd,
             engine_stream_cmd,
             group_cmd,
             consumer_cmd,
-            events_stream,
+            events_stream_cmd,
         )
         .await;
     });
 
+    let query_state = Arc::clone(&state);
     let queries = tokio::spawn(async move {
-        run_query_loop(query_conn, state, query_stream, query_group, query_consumer).await;
+        run_query_loop(
+            query_conn,
+            query_state,
+            query_stream,
+            query_group,
+            query_consumer,
+        )
+        .await;
     });
 
-    info!("command and query consumers running");
-    let _ = tokio::join!(commands, queries);
+    let snapshot_pool = pool.clone();
+    let snapshot_state = Arc::clone(&state);
+    let snapshot_meta = Arc::clone(&meta);
+    let snapshots = tokio::spawn(async move {
+        snapshot_ticker(snapshot_pool, snapshot_state, snapshot_meta).await;
+    });
+
+    info!("command, query, and snapshot loops running");
+    let _ = tokio::join!(commands, queries, snapshots);
 }
 
 async fn run_command_loop(
     mut conn: ConnectionManager,
     pool: sqlx::PgPool,
     state: Arc<Mutex<OrderEngineState>>,
+    meta: Arc<Mutex<SnapshotMeta>>,
     order_stream: String,
     engine_stream: String,
     group: String,
@@ -122,6 +184,7 @@ async fn run_command_loop(
         .group(&group, &consumer)
         .count(1)
         .block(5000);
+    let mut commands_since = 0u32;
 
     loop {
         let reply: RedisResult<StreamReadReply> = conn
@@ -132,12 +195,16 @@ async fn run_command_loop(
             Ok(reply) => {
                 for stream_key in reply.keys {
                     for entry in stream_key.ids {
-                        let mut guard = state.lock().await;
+                        let mut state_guard = state.lock().await;
+                        let mut meta_guard = meta.lock().await;
                         handle_entry(
                             &mut conn,
                             &pool,
-                            &mut guard,
+                            &mut state_guard,
+                            &mut meta_guard,
+                            &mut commands_since,
                             &stream_key.key,
+                            &order_stream,
                             &group,
                             &entry.id,
                             &entry.map,

@@ -18,13 +18,12 @@ pub async fn load_from_db(pool: &PgPool) -> Result<OrderEngineState, sqlx::Error
         .collect();
     state.processed_commands = processed.into_iter().collect();
 
-    // Open orders / books / stream cursor come from a full snapshot later.
     info!(
         assets = state.assets.len(),
         markets = state.markets.len(),
         balances = state.balances.len(),
         processed_commands = state.processed_commands.len(),
-        "loaded engine state from database"
+        "loaded catalog + balances from database"
     );
 
     Ok(state)

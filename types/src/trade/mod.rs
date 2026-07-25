@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 pub mod get_recent_trades_request;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trade {
     pub id: Uuid,
     pub market_id: Uuid,

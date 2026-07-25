@@ -14,14 +14,21 @@ use crate::{
         publish::publish_exchange_events,
     },
     helper::{ack::ack, field_as_bytes::field_as_bytes},
-    memory::OrderEngineState,
+    memory::{
+        OrderEngineState,
+        replay::{maybe_snapshot, touch_cursor},
+        snapshot::SnapshotMeta,
+    },
 };
 
 pub async fn handle_entry(
     conn: &mut ConnectionManager,
     pool: &PgPool,
     state: &mut OrderEngineState,
+    meta: &mut SnapshotMeta,
+    commands_since: &mut u32,
     stream: &str,
+    order_stream: &str,
     group: &str,
     entry_id: &str,
     fields: &HashMap<String, Value>,
@@ -61,6 +68,7 @@ pub async fn handle_entry(
     match apply_command_effects(state, command) {
         Ok(ApplyOutcome::AlreadyProcessed) => {
             info!(%command_id, %entry_id, "command already processed");
+            touch_cursor(meta, stream, entry_id, order_stream);
             ack(conn, stream, group, entry_id).await;
         }
         Ok(ApplyOutcome::Applied {
@@ -83,6 +91,9 @@ pub async fn handle_entry(
             if intents.is_empty() {
                 commit_command(state, command_id);
                 publish(state, conn).await;
+                touch_cursor(meta, stream, entry_id, order_stream);
+                *commands_since += 1;
+                maybe_snapshot(pool, state, meta, commands_since, false).await;
                 info!(%command_id, %entry_id, "applied command");
                 ack(conn, stream, group, entry_id).await;
                 return;
@@ -92,6 +103,9 @@ pub async fn handle_entry(
                 Ok(()) => {
                     commit_command(state, command_id);
                     publish(state, conn).await;
+                    touch_cursor(meta, stream, entry_id, order_stream);
+                    *commands_since += 1;
+                    maybe_snapshot(pool, state, meta, commands_since, false).await;
                     info!(
                         %command_id,
                         %entry_id,

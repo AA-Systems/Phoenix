@@ -1,4 +1,4 @@
-# docker compose --profile demo up -d --build demo_bot
+# docker compose --profile demo up -d --build
 
 services:
   postgres:

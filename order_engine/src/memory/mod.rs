@@ -7,6 +7,8 @@ use types::{
 use uuid::Uuid;
 
 pub mod load_from_db;
+pub mod replay;
+pub mod snapshot;
 
 pub struct OrderEngineState {
     pub next_order_id: u64,
