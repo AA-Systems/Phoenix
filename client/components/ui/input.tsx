@@ -17,7 +17,7 @@ export function Input({ label, hint, className = "", ...props }: InputProps) {
         )}
       </span>
       <input
-        className={`h-12 w-full rounded-xl border border-[#342d3b] bg-[#15111a] px-4 text-sm text-[#fff8f5] outline-none transition-colors placeholder:text-[#5f5665] focus:border-[#ff6f61] ${className}`}
+        className={`h-12 w-full rounded-xl border border-[#342d3b] bg-[#15111a] px-4 text-sm text-[#fff8f5] outline-none transition-all duration-200 placeholder:text-[#5f5665] focus:border-[#ff6f61] focus:shadow-[0_0_12px_rgba(255,111,97,0.2)] ${className}`}
         {...props}
       />
     </label>

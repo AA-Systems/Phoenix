@@ -150,13 +150,13 @@ export function OrderForm({
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg border border-[#2c2533] bg-[#100d14]">
-      <div className="grid grid-cols-2 gap-1 border-b border-[#2c2533] p-1.5">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-[#2c2533] bg-[#100d14]">
+      <div className="grid grid-cols-2 gap-1.5 border-b border-[#2c2533] p-2 bg-[#140f1a]">
         <button
-          className={`rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+          className={`rounded-xl py-2.5 text-sm font-bold transition-all duration-200 ${
             side === "buy"
-              ? "bg-[#14352c] text-[#74ddbd] shadow-[inset_0_0_0_1px_rgba(116,221,189,0.25)]"
-              : "text-[#716878] hover:bg-[#17131d] hover:text-[#fff8f5]"
+              ? "bg-[#74ddbd] text-[#0c1b16] shadow-[0_0_16px_rgba(116,221,189,0.35)]"
+              : "text-[#8e8594] hover:bg-[#1f1927] hover:text-[#fff8f5]"
           }`}
           onClick={() => {
             setSide("buy");
@@ -164,13 +164,13 @@ export function OrderForm({
           }}
           type="button"
         >
-          Buy
+          Buy {base}
         </button>
         <button
-          className={`rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+          className={`rounded-xl py-2.5 text-sm font-bold transition-all duration-200 ${
             side === "sell"
-              ? "bg-[#3a1c22] text-[#ff8175] shadow-[inset_0_0_0_1px_rgba(255,129,117,0.25)]"
-              : "text-[#716878] hover:bg-[#17131d] hover:text-[#fff8f5]"
+              ? "bg-[#ff6f61] text-[#160e12] shadow-[0_0_16px_rgba(255,111,97,0.35)]"
+              : "text-[#8e8594] hover:bg-[#1f1927] hover:text-[#fff8f5]"
           }`}
           onClick={() => {
             setSide("sell");
@@ -178,23 +178,25 @@ export function OrderForm({
           }}
           type="button"
         >
-          Sell
+          Sell {base}
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3.5 p-3.5">
+      <div className="flex flex-1 flex-col gap-4 p-4">
         <div className="flex items-center justify-between text-xs">
-          <span className="rounded-md bg-[#17131d] px-2 py-1 font-medium text-[#a198a5]">
-            Limit
+          <span className="rounded-md border border-[#2b2434] bg-[#18131f] px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-[#a198a5]">
+            Spot / Limit Order
           </span>
-          <span className="text-[#716878]">
-            Available{" "}
-            <span className="font-mono text-[#e6dfe7]">{availableLabel}</span>
+          <span className="text-[#8e8594]">
+            Avail:{" "}
+            <span className="font-mono font-semibold text-[#fff8f5]">
+              {availableLabel}
+            </span>
           </span>
         </div>
 
         <AssetField
-          label="Price"
+          label="Limit Price"
           onChange={(value) => {
             setPrice(value);
             setPct(0);
@@ -215,15 +217,15 @@ export function OrderForm({
             symbol={base}
             value={quantity}
           />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 pt-1">
             {PCT_STEPS.map((step) => (
               <button
-                className={`h-7 flex-1 rounded-md text-[11px] font-medium transition-colors ${
+                className={`h-7 flex-1 rounded-lg text-[11px] font-mono font-semibold transition-all ${
                   pct === step
                     ? side === "buy"
-                      ? "bg-[#14352c] text-[#74ddbd]"
-                      : "bg-[#3a1c22] text-[#ff8175]"
-                    : "bg-[#17131d] text-[#716878] hover:text-[#dcd4de]"
+                      ? "bg-[#13211e] text-[#74ddbd] border border-[#1b3d34]"
+                      : "bg-[#271a20] text-[#ff8175] border border-[#481f25]"
+                    : "bg-[#17131d] text-[#716878] border border-[#261f2e] hover:text-[#dcd4de] hover:border-[#382e42]"
                 }`}
                 key={step}
                 onClick={() => applyPercent(step)}
@@ -236,7 +238,7 @@ export function OrderForm({
         </div>
 
         <AssetField
-          label="Order value"
+          label="Est. Total Notional"
           placeholder="—"
           readOnly
           symbol={quote}
@@ -244,22 +246,27 @@ export function OrderForm({
         />
 
         {balances === null ? (
-          <p className="rounded-xl border border-[#302839] bg-[#17131d] px-3 py-3 text-xs leading-5 text-[#817787]">
-            <Link className="text-[#ff8175] underline" href="/login">
+          <p className="rounded-xl border border-[#302839] bg-[#17131d] px-3.5 py-3 text-xs leading-5 text-[#817787]">
+            <Link
+              className="font-semibold text-[#ff8175] hover:underline"
+              href="/login"
+            >
               Log in
             </Link>{" "}
-            to place orders and see balances.
+            to place orders and trade balances.
           </p>
         ) : null}
 
-        {error ? <p className="text-xs text-[#ff9e96]">{error}</p> : null}
-        {ok ? <p className="text-xs text-[#74ddbd]">{ok}</p> : null}
+        {error ? (
+          <p className="text-xs font-medium text-[#ff9e96]">{error}</p>
+        ) : null}
+        {ok ? <p className="text-xs font-medium text-[#74ddbd]">{ok}</p> : null}
 
         <Button
-          className={`mt-auto h-11 w-full rounded-xl text-[15px] ${
+          className={`mt-auto h-12 w-full rounded-xl text-base font-bold transition-all duration-200 active:scale-[0.98] ${
             side === "buy"
-              ? "border-transparent bg-[#1f8f6f] text-white hover:bg-[#24a07d]"
-              : "border-transparent bg-[#d14b4b] text-white hover:bg-[#e05555]"
+              ? "border-transparent bg-[#74ddbd] text-[#0c1b16] hover:bg-[#86e7c9] shadow-[0_4px_20px_rgba(116,221,189,0.3)]"
+              : "border-transparent bg-[#ff6f61] text-[#160e12] hover:bg-[#ff8477] shadow-[0_4px_20px_rgba(255,111,97,0.3)]"
           }`}
           disabled={
             submitting || balances === null || market.status !== "trading"
@@ -268,7 +275,7 @@ export function OrderForm({
           tone="quiet"
         >
           {submitting
-            ? "Submitting…"
+            ? "Submitting order..."
             : `${side === "buy" ? "Buy" : "Sell"} ${base}`}
         </Button>
       </div>
@@ -293,13 +300,13 @@ function AssetField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 flex items-center justify-between text-[11px] text-[#716878]">
+      <span className="mb-1.5 flex items-center justify-between text-[11px] font-medium text-[#8e8594]">
         <span>{label}</span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#57505e]">
+        <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#716878]">
           {symbol}
         </span>
       </span>
-      <div className="group relative flex h-12 items-center rounded-xl border border-[#302839] bg-[#17131d] transition-colors focus-within:border-[#ff6f61]/70">
+      <div className="group relative flex h-11 items-center rounded-xl border border-[#302839] bg-[#17131d] transition-all duration-200 focus-within:border-[#ff6f61] focus-within:shadow-[0_0_12px_rgba(255,111,97,0.2)]">
         <input
           className="h-full w-full bg-transparent pr-12 pl-3.5 font-mono text-sm text-[#fff8f5] outline-none placeholder:text-[#4a4352] disabled:cursor-default"
           disabled={readOnly}

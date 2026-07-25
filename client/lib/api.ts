@@ -1,3 +1,4 @@
+import { sortMarketsPinned } from "@/lib/markets";
 import { clearSession, getSession, saveSession } from "@/lib/session";
 import type {
   Asset,
@@ -144,12 +145,13 @@ export function demoCredit(assetSymbol?: string): Promise<{
   );
 }
 
-export function listMarkets(limit = 50, skip = 0): Promise<Market[]> {
+export async function listMarkets(limit = 50, skip = 0): Promise<Market[]> {
   const params = new URLSearchParams({
     limit: String(limit),
     skip: String(skip),
   });
-  return request<Market[]>(`/api/v1/markets?${params}`);
+  const markets = await request<Market[]>(`/api/v1/markets?${params}`);
+  return sortMarketsPinned(markets);
 }
 
 export function listAssets(): Promise<Asset[]> {

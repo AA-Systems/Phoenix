@@ -39,26 +39,30 @@ export function OpenOrdersPanel({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-[#2c2533] bg-[#100d14]">
-      <div className="flex shrink-0 items-center justify-between border-b border-[#2c2533] px-4 py-2.5">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-[#716878]">
-          Open orders
-        </p>
-        <p className="text-xs text-[#57505e]">{filtered.length} active</p>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[#2c2533] bg-[#100d14]">
+      <div className="flex shrink-0 items-center justify-between border-b border-[#2c2533] px-4 py-2.5 bg-[#140f1a]">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[#8e8594]">
+            Open Orders
+          </span>
+          <span className="rounded-full bg-[#241d2c] border border-[#342a3e] px-2 py-0.5 font-mono text-[10px] font-semibold text-[#fff8f5]">
+            {filtered.length}
+          </span>
+        </div>
       </div>
 
       {orders === null ? (
-        <p className="flex flex-1 items-center justify-center px-4 py-6 text-center text-sm text-[#57505e]">
-          Log in to view your open orders.
+        <p className="flex flex-1 items-center justify-center px-4 py-6 text-center text-sm text-[#716878]">
+          Log in to view your active open orders.
         </p>
       ) : filtered.length === 0 ? (
-        <p className="flex flex-1 items-center justify-center px-4 py-6 text-center text-sm text-[#57505e]">
-          No open orders on this market.
+        <p className="flex flex-1 items-center justify-center px-4 py-6 text-center text-sm text-[#716878]">
+          No open orders on this market pair.
         </p>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
           <div className="min-w-[720px]">
-            <div className="sticky top-0 grid grid-cols-[1.1fr_0.7fr_1fr_1fr_1fr_1fr_auto] bg-[#100d14] px-4 py-2 text-[10px] uppercase tracking-[0.12em] text-[#57505e]">
+            <div className="sticky top-0 grid grid-cols-[1.1fr_0.7fr_1fr_1fr_1fr_1fr_auto] bg-[#17121e] border-b border-[#241e2b] px-4 py-2 text-[10px] uppercase tracking-[0.12em] font-mono text-[#716878]">
               <span>Market</span>
               <span>Side</span>
               <span className="text-right">Price</span>
@@ -74,36 +78,38 @@ export function OpenOrdersPanel({
               );
               return (
                 <div
-                  className="grid grid-cols-[1.1fr_0.7fr_1fr_1fr_1fr_1fr_auto] items-center border-t border-[#292230] px-4 py-2.5 text-sm"
+                  className="grid grid-cols-[1.1fr_0.7fr_1fr_1fr_1fr_1fr_auto] items-center border-b border-[#241e2b] px-4 py-2.5 text-xs transition-colors hover:bg-[#1a1422]"
                   key={order.id}
                 >
-                  <span className="text-[#fff8f5]">
+                  <span className="font-semibold text-[#fff8f5]">
                     {formatMarketPair(order.market_symbol)}
                   </span>
-                  <span
-                    className={
-                      order.order_type === "buy"
-                        ? "text-[#74ddbd]"
-                        : "text-[#ff8175]"
-                    }
-                  >
-                    {order.order_type}
-                  </span>
-                  <span className="text-right font-mono text-[#dcd4de]">
+                  <div>
+                    <span
+                      className={`inline-block rounded px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                        order.order_type === "buy"
+                          ? "bg-[#13211e] text-[#74ddbd] border border-[#1b3d34]"
+                          : "bg-[#271a20] text-[#ff8175] border border-[#481f25]"
+                      }`}
+                    >
+                      {order.order_type}
+                    </span>
+                  </div>
+                  <span className="text-right font-mono font-medium text-[#ded6df]">
                     {formatPrice(order.price, quoteDecimals)}
                   </span>
-                  <span className="text-right font-mono text-[#dcd4de]">
+                  <span className="text-right font-mono text-[#ded6df]">
                     {formatQty(order.quantity, baseDecimals)}
                   </span>
                   <span className="text-right font-mono text-[#716878]">
                     {formatQty(order.filled_quantity, baseDecimals)}
                   </span>
-                  <span className="text-right font-mono text-[#dcd4de]">
+                  <span className="text-right font-mono text-[#ded6df]">
                     {formatQty(order.remaining, baseDecimals)}
                   </span>
                   <div className="flex w-20 justify-end">
                     <button
-                      className="rounded-full border border-[#3a3142] px-2.5 py-1 text-xs text-[#ff9e96] hover:border-[#ff6f61] disabled:opacity-50"
+                      className="rounded-full border border-[#3b2e47] bg-[#1a1322] px-3 py-1 text-[11px] font-semibold text-[#ff8175] transition-all duration-200 hover:border-[#ff6f61] hover:bg-[#ff6f61] hover:text-[#160e12] disabled:opacity-50"
                       disabled={busyId === order.id}
                       onClick={() => onCancel(order.id)}
                       type="button"

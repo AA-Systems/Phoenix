@@ -4,8 +4,10 @@ import {
   CandlestickSeries,
   ColorType,
   createChart,
+  type CandlestickData,
   type IChartApi,
   type ISeriesApi,
+  type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,18 +23,64 @@ import {
 import { marketDecimals } from "@/lib/trade-format";
 import type { TradeView } from "@/lib/types";
 
+export type ChartCandleOhlc = {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
+
 function toChartPrice(raw: number, decimals: number) {
   return raw / 10 ** decimals;
+}
+
+function isCandleData(data: unknown): data is CandlestickData<Time> {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "open" in data &&
+    "high" in data &&
+    "low" in data &&
+    "close" in data
+  );
+}
+
+function humanToRaw(human: number, decimals: number) {
+  return Math.round(human * 10 ** decimals);
+}
+
+function ohlcFromSeries(
+  data: CandlestickData<Time>,
+  time: Time,
+  quoteDecimals: number,
+): ChartCandleOhlc | null {
+  const unix =
+    typeof time === "number"
+      ? time
+      : typeof time === "string"
+        ? Math.floor(new Date(time).getTime() / 1000)
+        : null;
+  if (unix === null) return null;
+  return {
+    time: unix,
+    open: humanToRaw(data.open, quoteDecimals),
+    high: humanToRaw(data.high, quoteDecimals),
+    low: humanToRaw(data.low, quoteDecimals),
+    close: humanToRaw(data.close, quoteDecimals),
+  };
 }
 
 export function PriceChart({
   marketSymbol,
   pair,
   trades,
+  onCandleFocus,
 }: {
   marketSymbol: string;
   pair: string;
   trades: TradeView[];
+  onCandleFocus?: (candle: ChartCandleOhlc | null) => void;
 }) {
   const [interval, setInterval] = useState<CandleInterval>("1m");
   const [candles, setCandles] = useState<Candle[]>([]);
@@ -44,8 +92,14 @@ export function PriceChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const onCandleFocusRef = useRef(onCandleFocus);
+  const quoteDecimalsRef = useRef(0);
+  const pinnedTimeRef = useRef<number | null>(null);
   const decimalsBySymbol = useAssetDecimals();
   const { quoteDecimals } = marketDecimals(marketSymbol, decimalsBySymbol);
+
+  onCandleFocusRef.current = onCandleFocus;
+  quoteDecimalsRef.current = quoteDecimals;
 
   useEffect(() => {
     let active = true;
@@ -54,6 +108,8 @@ export function PriceChart({
     setSeedReady(false);
     primedSeen.current = false;
     seenTrades.current = new Set();
+    pinnedTimeRef.current = null;
+    onCandleFocusRef.current?.(null);
 
     getCandles(marketSymbol, interval, 200)
       .then((rows) => {
@@ -81,7 +137,6 @@ export function PriceChart({
   useEffect(() => {
     if (!seedReady) return;
 
-    // History is already in DB candles — mark current feed as seen once.
     if (!primedSeen.current) {
       for (const trade of trades) {
         seenTrades.current.add(trade.id);
@@ -131,8 +186,8 @@ export function PriceChart({
         textColor: "#938a98",
       },
       grid: {
-        vertLines: { color: "rgba(48,40,57,0.55)" },
-        horzLines: { color: "rgba(48,40,57,0.55)" },
+        vertLines: { color: "rgba(40, 32, 48, 0.6)" },
+        horzLines: { color: "rgba(40, 32, 48, 0.6)" },
       },
       rightPriceScale: {
         borderColor: "#2c2533",
@@ -143,22 +198,70 @@ export function PriceChart({
         secondsVisible: false,
       },
       crosshair: {
-        vertLine: { color: "rgba(255,129,117,0.35)" },
-        horzLine: { color: "rgba(255,129,117,0.35)" },
+        vertLine: { color: "rgba(255, 111, 97, 0.4)", width: 1, style: 2 },
+        horzLine: { color: "rgba(255, 111, 97, 0.4)", width: 1, style: 2 },
       },
     });
 
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#1f8f6f",
-      downColor: "#d14b4b",
-      borderUpColor: "#1f8f6f",
-      borderDownColor: "#d14b4b",
+      upColor: "#74ddbd",
+      downColor: "#ff6f61",
+      borderUpColor: "#74ddbd",
+      borderDownColor: "#ff6f61",
       wickUpColor: "#74ddbd",
-      wickDownColor: "#ff8175",
+      wickDownColor: "#ff6f61",
     });
 
     chartRef.current = chart;
     seriesRef.current = series;
+
+    const emitFromParam = (param: {
+      time?: Time;
+      seriesData: Map<unknown, unknown>;
+    }) => {
+      if (param.time === undefined) {
+        if (pinnedTimeRef.current === null) {
+          onCandleFocusRef.current?.(null);
+        }
+        return;
+      }
+      const data = param.seriesData.get(series);
+      if (!isCandleData(data)) {
+        if (pinnedTimeRef.current === null) {
+          onCandleFocusRef.current?.(null);
+        }
+        return;
+      }
+      const ohlc = ohlcFromSeries(data, param.time, quoteDecimalsRef.current);
+      onCandleFocusRef.current?.(ohlc);
+    };
+
+    chart.subscribeCrosshairMove((param) => {
+      if (pinnedTimeRef.current !== null) return;
+      emitFromParam(param);
+    });
+
+    chart.subscribeClick((param) => {
+      if (param.time === undefined) {
+        pinnedTimeRef.current = null;
+        onCandleFocusRef.current?.(null);
+        return;
+      }
+      const data = param.seriesData.get(series);
+      if (!isCandleData(data)) {
+        pinnedTimeRef.current = null;
+        onCandleFocusRef.current?.(null);
+        return;
+      }
+      const ohlc = ohlcFromSeries(data, param.time, quoteDecimalsRef.current);
+      if (!ohlc) return;
+      if (pinnedTimeRef.current === ohlc.time) {
+        pinnedTimeRef.current = null;
+      } else {
+        pinnedTimeRef.current = ohlc.time;
+      }
+      onCandleFocusRef.current?.(ohlc);
+    });
 
     return () => {
       chart.remove();
@@ -183,12 +286,12 @@ export function PriceChart({
         <p className="text-[10px] uppercase tracking-[0.16em] text-[#716878]">
           Chart · {pair}
         </p>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 rounded-lg border border-[#27202f] bg-[#18131f] p-0.5">
           {CANDLE_INTERVALS.map((value) => (
             <button
-              className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+              className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-all ${
                 interval === value
-                  ? "bg-[#271a20] text-[#ff8175]"
+                  ? "border border-[#ff6f61]/30 bg-[#ff6f61]/15 text-[#ff8175] shadow-xs"
                   : "text-[#716878] hover:text-[#dcd4de]"
               }`}
               key={value}

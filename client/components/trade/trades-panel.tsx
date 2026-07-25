@@ -18,18 +18,21 @@ export function TradesPanel({
   );
 
   return (
-    <div className="flex h-full min-h-[180px] flex-col overflow-hidden rounded-lg border border-[#2c2533] bg-[#100d14] lg:min-h-0">
-      <div className="border-b border-[#2c2533] px-3 py-2.5 text-[10px] uppercase tracking-[0.16em] text-[#716878]">
-        Recent trades
+    <div className="flex h-full min-h-[180px] flex-col overflow-hidden rounded-xl border border-[#2c2533] bg-[#100d14] lg:min-h-0">
+      <div className="flex items-center justify-between border-b border-[#2c2533] px-3.5 py-2">
+        <span className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[#8e8594]">
+          Recent Trades
+        </span>
+        <span className="size-1.5 rounded-full bg-[#74ddbd] pulse-dot-green" />
       </div>
-      <div className="grid grid-cols-3 px-3 py-2 text-[10px] uppercase tracking-[0.12em] text-[#57505e]">
+      <div className="grid grid-cols-3 px-3.5 py-2 text-[10px] uppercase tracking-[0.12em] font-mono text-[#716878] border-b border-[#241e2b]">
         <span>Price</span>
-        <span className="text-right">Size</span>
-        <span className="text-right">Time</span>
+        <span className="text-right font-mono">Size</span>
+        <span className="text-right font-mono">Time</span>
       </div>
-      <div className="flex-1 overflow-auto font-mono text-xs">
+      <div className="flex-1 overflow-auto font-mono text-xs select-none">
         {trades.length === 0 ? (
-          <p className="px-3 py-8 text-center text-[#57505e]">
+          <p className="px-3 py-8 text-center text-[#716878]">
             Waiting for live fills…
           </p>
         ) : (
@@ -46,14 +49,21 @@ export function TradesPanel({
               },
             );
             return (
-              <div className="grid grid-cols-3 px-3 py-[4px]" key={trade.id}>
-                <span className={up ? "text-[#74ddbd]" : "text-[#ff8175]"}>
+              <div
+                className="grid grid-cols-3 px-3.5 py-[4px] hover:bg-[#1a1422] transition-colors"
+                key={trade.id}
+              >
+                <span
+                  className={`font-semibold ${up ? "text-[#74ddbd]" : "text-[#ff8175]"}`}
+                >
                   {formatPrice(trade.price, quoteDecimals)}
                 </span>
-                <span className="text-right text-[#dcd4de]">
+                <span className="text-right text-[#ded6df]">
                   {formatQty(trade.quantity, baseDecimals)}
                 </span>
-                <span className="text-right text-[#716878]">{time}</span>
+                <span className="text-right text-[#716878] text-[11px]">
+                  {time}
+                </span>
               </div>
             );
           })

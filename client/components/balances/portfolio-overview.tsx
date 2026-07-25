@@ -25,10 +25,10 @@ export function PortfolioOverview({ balances, ledger }: Props) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-      <div className="relative overflow-hidden rounded-[28px] border border-[#302839] bg-[#141018] p-6 sm:p-7">
+      <div className="relative overflow-hidden rounded-[28px] border border-[#302839] bg-[#141018]/90 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-md">
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-[#ff6f61]/10 blur-3xl"
+          className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-[#ff6f61]/10 blur-3xl"
         />
         <div className="relative flex flex-col gap-8 sm:flex-row sm:items-center">
           <div className="relative mx-auto size-[148px] shrink-0 sm:mx-0">
@@ -68,10 +68,10 @@ export function PortfolioOverview({ balances, ledger }: Props) {
             </svg>
             <div className="absolute inset-0 grid place-items-center text-center">
               <div>
-                <p className="font-mono text-2xl font-semibold tracking-tight text-[#fff8f5]">
+                <p className="font-mono text-2xl font-bold tracking-tight text-[#fff8f5]">
                   {stats.lockedShare}%
                 </p>
-                <p className="mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[#716878]">
+                <p className="mt-0.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[#8e8594]">
                   Reserved
                 </p>
               </div>
@@ -79,15 +79,18 @@ export function PortfolioOverview({ balances, ledger }: Props) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ff8175]">
-              Liquidity mix
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#fff8f5]">
-              Available vs reserved
+            <div className="flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-[#ff6f61] pulse-dot-green" />
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ff8175]">
+                Liquidity Mix
+              </p>
+            </div>
+            <h2 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-[#fff8f5]">
+              Available vs Reserved
             </h2>
-            <p className="mt-2 max-w-sm text-sm leading-6 text-[#8d8492]">
-              Average share reserved by orders across your assets — each asset
-              weighted equally, not mixed by raw units.
+            <p className="mt-2 max-w-sm text-sm leading-6 text-[#938a98]">
+              Average share reserved by active orders across your assets — each
+              asset weighted equally.
             </p>
 
             <div className="mt-5 space-y-3">
@@ -105,12 +108,12 @@ export function PortfolioOverview({ balances, ledger }: Props) {
           </div>
         </div>
 
-        <div className="relative mt-8 space-y-3 border-t border-[#2a2330] pt-6">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[#716878]">
-            By asset
+        <div className="relative mt-8 space-y-3.5 border-t border-[#2a2330] pt-6">
+          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#8e8594]">
+            Asset Allocation
           </p>
           {balances.length === 0 ? (
-            <p className="text-sm text-[#817884]">No balances yet.</p>
+            <p className="text-sm text-[#817884]">No balances loaded yet.</p>
           ) : (
             balances.map((balance, index) => {
               const total = balance.available + balance.locked;
@@ -120,25 +123,25 @@ export function PortfolioOverview({ balances, ledger }: Props) {
               return (
                 <div key={balance.asset_id}>
                   <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                    <span className="font-mono text-xs text-[#ddd5df]">
+                    <span className="font-mono text-xs font-semibold text-[#fff8f5]">
                       {balance.symbol}
                     </span>
-                    <span className="text-[10px] text-[#716878]">
+                    <span className="text-[10px] font-mono text-[#8e8594]">
                       {lockedPct > 0
                         ? `${Math.round(lockedPct)}% locked`
-                        : "fully available"}
+                        : "100% available"}
                     </span>
                   </div>
-                  <div className="flex h-2 overflow-hidden rounded-full bg-[#1d1722]">
+                  <div className="flex h-2 overflow-hidden rounded-full bg-[#1d1722] p-0.5">
                     <span
-                      className="bar-grow h-full bg-[#74ddbd]"
+                      className="bar-grow h-full rounded-full bg-[#74ddbd]"
                       style={{
                         width: `${availablePct}%`,
                         animationDelay: `${index * 60}ms`,
                       }}
                     />
                     <span
-                      className="bar-grow h-full bg-[#ff6f61]"
+                      className="bar-grow h-full rounded-full bg-[#ff6f61]"
                       style={{
                         width: `${lockedPct}%`,
                         animationDelay: `${index * 60 + 40}ms`,
