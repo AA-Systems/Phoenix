@@ -18,7 +18,7 @@ export function MarketBoard() {
     let active = true;
     listMarkets()
       .then((next) => {
-        if (active) setMarkets(next.slice(0, 6));
+        if (active) setMarkets(next.slice(0, 2));
       })
       .catch(() => {
         if (active) setError(true);
