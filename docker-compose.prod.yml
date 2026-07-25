@@ -1,71 +1,151 @@
+# EC2 demo deploy (copy as /home/ubuntu/cex/docker-compose.yml):
+#   1. Place .env  and secrets/jwt-*.pem next to this file
+#   2. docker compose --profile demo up -d
+#   3. Put Nginx in front of :3001 (web), :3000 (api), :3002 (ws)
+
+name: pheonix
+
+x-app-env: &app-env
+  env_file:
+    - .env
+  restart: unless-stopped
+
 services:
-  api:
-    build:
-      context: .
-      dockerfile: api/Dockerfile
-    container_name: api_cex
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_cex
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-cex}
+    volumes:
+      - db_storage:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d cex"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cex
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-migrate:${IMAGE_TAG:-latest}
+    container_name: migrate_cex
     env_file:
       - .env
-    volumes:
-      - /etc/centralized-exchange/secrets:/run/secrets/jwt:ro
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # Same image as api; runs /cex/seed once after migrations (idempotent upserts).
+  seed:
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-api:${IMAGE_TAG:-latest}
+    container_name: seed_cex
+    command: ["/cex/seed"]
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  api:
+    <<: *app-env
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-api:${IMAGE_TAG:-latest}
+    container_name: api_cex
     environment:
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt/jwt-public.pem
+    volumes:
+      - ./secrets:/run/secrets/jwt:ro
     ports:
       - "3000:3000"
-    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
 
   order_engine:
-    build:
-      context: .
-      dockerfile: order_engine/Dockerfile
+    <<: *app-env
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-order-engine:${IMAGE_TAG:-latest}
     container_name: order_engine_cex
-    env_file:
-      - .env
-    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
 
   ws_server:
-    build:
-      context: .
-      dockerfile: ws_server/Dockerfile
+    <<: *app-env
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-ws:${IMAGE_TAG:-latest}
     container_name: ws_server_cex
-    env_file:
-      - .env
+    environment:
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt/jwt-public.pem
     volumes:
-      - /etc/centralized-exchange/secrets:/run/secrets/jwt:ro
+      - ./secrets:/run/secrets/jwt:ro
     ports:
       - "3002:3002"
-    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
 
   candle_builder:
-    build:
-      context: .
-      dockerfile: candle_builder/Dockerfile
+    <<: *app-env
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-candle-builder:${IMAGE_TAG:-latest}
     container_name: candle_builder_cex
-    env_file:
-      - .env
-    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+      order_engine:
+        condition: service_started
 
   demo_bot:
-    build:
-      context: .
-      dockerfile: demo_bot/Dockerfile
+    <<: *app-env
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-demo-bot:${IMAGE_TAG:-latest}
     container_name: demo_bot_cex
-    env_file:
-      - .env
-    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+      order_engine:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
     profiles:
       - demo
 
   client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-client:${IMAGE_TAG:-latest}
     container_name: client_cex
     ports:
       - "3001:3001"
     depends_on:
       - api
     restart: unless-stopped
+
+volumes:
+  db_storage:
+    driver: local

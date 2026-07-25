@@ -1,5 +1,7 @@
 */target
 .env
+.env.prod
 target/
 secrets/
-ARCHITECTURE.md
+deploy/
+scripts/
