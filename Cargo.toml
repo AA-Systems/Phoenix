@@ -1,4 +1,13 @@
 [workspace]
 resolver = "3"
 
-members = ["api", "candle_builder", "common", "db", "order_engine", "types", "ws_server"]
+members = [
+    "api",
+    "candle_builder",
+    "common",
+    "db",
+    "demo_bot",
+    "order_engine",
+    "types",
+    "ws_server",
+]

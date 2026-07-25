@@ -46,6 +46,17 @@ services:
       - .env
     restart: unless-stopped
 
+  demo_bot:
+    build:
+      context: .
+      dockerfile: demo_bot/Dockerfile
+    container_name: demo_bot_cex
+    env_file:
+      - .env
+    restart: unless-stopped
+    profiles:
+      - demo
+
   client:
     build:
       context: ./client

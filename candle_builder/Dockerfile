@@ -9,6 +9,7 @@ COPY types ./types
 COPY order_engine ./order_engine
 COPY ws_server ./ws_server
 COPY candle_builder ./candle_builder
+COPY demo_bot ./demo_bot
 RUN cargo build --release -p candle_builder
 
 # --- run ---

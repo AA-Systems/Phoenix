@@ -1,3 +1,5 @@
+# docker compose --profile demo up -d --build demo_bot
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -99,6 +101,21 @@ services:
       order_engine:
         condition: service_started
     restart: unless-stopped
+
+  demo_bot:
+    build:
+      context: .
+      dockerfile: demo_bot/Dockerfile
+    container_name: demo_bot_cex
+    env_file:
+      - .env
+    depends_on:
+      - api
+      - order_engine
+    restart: unless-stopped
+    # Opt-in: docker compose --profile demo up --build
+    profiles:
+      - demo
 
   client:
     build:

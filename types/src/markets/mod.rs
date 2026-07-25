@@ -16,7 +16,7 @@ pub enum MarketStatus {
     Archived,
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct Market {
     pub id: uuid::Uuid,
     pub symbol: String,

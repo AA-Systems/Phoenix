@@ -84,11 +84,11 @@ async fn main() {
         config.engine_queries_stream,
         config.engine_query_timeout_secs,
         RateLimitQuotas {
-            auth: Quota::per_minute(10),
-            health: Quota::per_minute(5),
-            market: Quota::per_minute(100),
-            asset: Quota::per_minute(100),
-            order: Quota::per_minute(100),
+            auth: Quota::per_minute(30),
+            health: Quota::per_minute(30),
+            market: Quota::per_second(500),
+            asset: Quota::per_second(200),
+            order: Quota::per_second(2_000),
         },
     );
 

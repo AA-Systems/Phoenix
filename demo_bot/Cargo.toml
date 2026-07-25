@@ -1,0 +1,23 @@
+[package]
+name = "demo_bot"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "demo_bot"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.100"
+chrono = { version = "0.4.45", features = ["serde"] }
+clap = { version = "4.5.54", features = ["derive", "env"] }
+dotenv = "0.15.0"
+rand = "0.9.2"
+reqwest = { version = "0.12.28", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+tokio = { version = "1.52.3", features = ["rt-multi-thread", "macros", "time"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+types = { path = "../types" }
+uuid = { version = "1.23.5", features = ["serde"] }
