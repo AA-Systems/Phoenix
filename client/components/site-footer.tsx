@@ -16,13 +16,13 @@ export function SiteFooter() {
           <Link
             className="inline-flex items-center gap-3"
             href="/"
-            aria-label="Pheonix home"
+            aria-label="Phoenix home"
           >
             <span className="grid size-10 place-items-center rounded-full bg-[#ff6f61] text-[#140d12]">
               <Flame fill="currentColor" size={20} strokeWidth={1.7} />
             </span>
             <span className="text-sm font-bold tracking-[0.18em] text-[#fff8f5]">
-              PHEONIX
+              PHOENIX
             </span>
           </Link>
           <p className="mt-6 max-w-sm text-base leading-7 text-[#817787]">
@@ -71,11 +71,11 @@ export function SiteFooter() {
         <div className="phoenix-footer-glow absolute -bottom-36 left-1/2 h-52 w-[50%] rounded-[50%] bg-[#ffc060] opacity-65 blur-[70px] [animation-delay:-2s]" />
 
         <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[clamp(6rem,19vw,18rem)] font-black leading-[0.7] tracking-[-0.085em] text-[#ffd0c8]/25">
-          PHEONIX
+          PHOENIX
         </p>
 
         <div className="absolute bottom-5 left-0 right-0 z-10 mx-auto flex max-w-[1380px] flex-col gap-3 px-6 font-mono text-[9px] uppercase tracking-[0.14em] text-[#35171a] sm:flex-row sm:items-center sm:justify-between sm:px-10 lg:px-8">
-          <span>© 2026 PHEONIX Exchange</span>
+          <span>© 2026 PHOENIX Exchange</span>
           <span>Spot markets · Devnet ready</span>
         </div>
       </div>

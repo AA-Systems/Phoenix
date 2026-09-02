@@ -41,7 +41,7 @@ export default function Home() {
             <div className="page-reveal flex flex-col justify-center px-6 py-24 sm:px-10 lg:border-r lg:border-[#241f2a] lg:px-12">
               <div className="mb-9 flex items-center gap-4 text-[10px] uppercase tracking-[0.24em] text-[#817787]">
                 <span className="h-px w-10 bg-[#ff6f61]" />
-                PHEONIX spot exchange / 2026
+                PHOENIX spot exchange / 2026
               </div>
               <h1 className="max-w-3xl text-6xl font-semibold leading-[0.9] tracking-[-0.07em] text-[#fff8f5] sm:text-7xl lg:text-[96px]">
                 Clear eyes.
@@ -129,7 +129,7 @@ export default function Home() {
                     }`}
                   >
                     <Image
-                      alt={`${title} — Pheonix screenshot`}
+                      alt={`${title} — Phoenix screenshot`}
                       className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.015]"
                       fill
                       sizes="(min-width: 1024px) 60vw, 100vw"

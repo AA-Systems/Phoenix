@@ -3,7 +3,7 @@
 #   2. docker compose --profile demo up -d
 #   3. Put Nginx in front of :3001 (web), :3000 (api), :3002 (ws)
 
-name: pheonix
+name: phoenix
 
 x-app-env: &app-env
   env_file:
@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
 
   migrate:
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-migrate:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-migrate:${IMAGE_TAG:-latest}
     container_name: migrate_cex
     env_file:
       - .env
@@ -51,7 +51,7 @@ services:
 
   # Same image as api; runs /cex/seed once after migrations (idempotent upserts).
   seed:
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-api:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-api:${IMAGE_TAG:-latest}
     container_name: seed_cex
     command: ["/cex/seed"]
     env_file:
@@ -65,7 +65,7 @@ services:
 
   api:
     <<: *app-env
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-api:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-api:${IMAGE_TAG:-latest}
     container_name: api_cex
     environment:
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem
@@ -84,7 +84,7 @@ services:
 
   order_engine:
     <<: *app-env
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-order-engine:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-order-engine:${IMAGE_TAG:-latest}
     container_name: order_engine_cex
     depends_on:
       postgres:
@@ -96,7 +96,7 @@ services:
 
   ws_server:
     <<: *app-env
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-ws:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-ws:${IMAGE_TAG:-latest}
     container_name: ws_server_cex
     environment:
       JWT_PRIVATE_KEY_PATH: /run/secrets/jwt/jwt-private.pem
@@ -111,7 +111,7 @@ services:
 
   candle_builder:
     <<: *app-env
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-candle-builder:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-candle-builder:${IMAGE_TAG:-latest}
     container_name: candle_builder_cex
     depends_on:
       postgres:
@@ -125,7 +125,7 @@ services:
 
   demo_bot:
     <<: *app-env
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-demo-bot:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-demo-bot:${IMAGE_TAG:-latest}
     container_name: demo_bot_cex
     depends_on:
       api:
@@ -138,7 +138,7 @@ services:
       - demo
 
   client:
-    image: ${DOCKERHUB_USER:-akshatarora130}/pheonix-client:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-akshatarora130}/phoenix-client:${IMAGE_TAG:-latest}
     container_name: client_cex
     ports:
       - "3001:3001"

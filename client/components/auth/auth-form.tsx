@@ -121,7 +121,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       </Button>
 
       <p className="text-center text-sm text-[#817884]">
-        {isSignup ? "Already have an account?" : "New to PHEONIX?"}{" "}
+        {isSignup ? "Already have an account?" : "New to PHOENIX?"}{" "}
         <Link
           className="font-medium text-[#eee8ef] underline decoration-[#625769] underline-offset-4 hover:text-[#ff8175]"
           href={isSignup ? "/login" : "/signup"}

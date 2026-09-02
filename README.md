@@ -1,4 +1,4 @@
-# PHEONIX
+# PHOENIX
 
 Spot CEX demo — in-memory matching, Redis command bus, Postgres for money & snapshots.
 
@@ -16,14 +16,14 @@ Spot CEX demo — in-memory matching, Redis command bus, Postgres for money & sn
 
 ## Tech stack
 
-| Layer | Tech |
-|---|---|
-| API / engine / WS / candles / demo bot | **Rust** (Axum, Tokio, SQLx) |
-| Web desk | **Next.js** (Bun) |
-| Command bus & fan-out | **Redis Streams** |
-| Durable store | **Postgres** (balances, ledger, candles, engine snapshots) |
-| Auth | JWT (access) + HttpOnly refresh cookie |
-| Deploy | Docker Compose · Nginx · EC2 |
+| Layer                                  | Tech                                                       |
+| -------------------------------------- | ---------------------------------------------------------- |
+| API / engine / WS / candles / demo bot | **Rust** (Axum, Tokio, SQLx)                               |
+| Web desk                               | **Next.js** (Bun)                                          |
+| Command bus & fan-out                  | **Redis Streams**                                          |
+| Durable store                          | **Postgres** (balances, ledger, candles, engine snapshots) |
+| Auth                                   | JWT (access) + HttpOnly refresh cookie                     |
+| Deploy                                 | Docker Compose · Nginx · EC2                               |
 
 **Redis streams:** `order-commands` · `engine-commands` · `engine-queries` · `exchange-events`
 

@@ -1,7 +1,7 @@
 use clap::Parser;
 
 #[derive(Debug, Clone, Parser)]
-#[command(name = "demo_bot", about = "Demo liquidity + trade bot for Pheonix")]
+#[command(name = "demo_bot", about = "Demo liquidity + trade bot for Phoenix")]
 pub struct BotConfig {
     /// API base URL
     #[arg(

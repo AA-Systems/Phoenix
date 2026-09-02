@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "PHEONIX — Rise above the noise",
-    template: "%s · PHEONIX",
+    default: "PHOENIX — Rise above the noise",
+    template: "%s · PHOENIX",
   },
   description:
     "A calm, focused spot exchange for transparent balances and deliberate trading.",
